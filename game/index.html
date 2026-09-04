@@ -278,6 +278,9 @@ img{max-width:100%}
 .lifefoot .n{font-size:25px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.03em;line-height:1.05;transition:color .3s ease;white-space:nowrap}
 .lifefoot .n small{font-size:12px;font-weight:800;margin-left:1px}
 .lifefoot .n.low{color:var(--warn)}
+.lifefoot.over{background:rgba(255,244,241,.97);border-top:2px solid var(--warn)}
+.lifefoot.over .n,.lifefoot.over .cap{color:var(--warn)}
+.lifefoot.over .sum{color:#a8452c}
 .lifefoot .cap{font-size:10.5px;color:var(--ink2);font-weight:700;white-space:nowrap}
 .lifefoot .sum{flex:1;min-width:0;font-size:11px;color:var(--ink2);line-height:1.45;font-variant-numeric:tabular-nums}
 
@@ -667,6 +670,8 @@ var PLACEHOLDER_MODEL = {
     parents: 1.10                   // 顧爸媽的日常加成；長照費用另用事件卡加
   },
   catMonthly: 2000,
+  moonlightRate: 0.8,               // 兼差時薪＝本職稅後時薪 × 0.8（PLACEHOLDER：沒有官方的兼差時薪統計）
+  moonlightMaxHoursPerDay: 6,       // 一天最多兼 6 小時；再不夠才動存款／變負債
   freelancerVolatility: 0.35,       // 自由工作者收入上下震盪幅度
   laborPensionFundReturn: 0.03,     // 勞退新制基金保守年化
   employerContribRate: 0.06,        // 勞退雇主提繳 6%（勞退新制法定最低）
@@ -906,6 +911,17 @@ function simulateLife(p){
       withdraw = Math.max(0, spend - pensionIncome);
     }
 
+    // ---- 花的錢不能比賺的多：超支先用兼差補，補不完才動存款 ----
+    // 學生不套這條（他有學貸與家裡撐著，模型已經假設過了）；退休後撐不住走原本的「錢用完」
+    var incomeBase0 = workIncome + gain;
+    var moonHours = 0, moonIncome = 0;
+    if (!isStudent && !retired && spend > incomeBase0 && workIncome > 0){
+      var moonHourly = (workIncome / M.workHoursPerYear) * M.moonlightRate;
+      var maxMoon = M.moonlightMaxHoursPerDay * 365;
+      moonHours = Math.min((spend - incomeBase0) / moonHourly, maxMoon);
+      moonIncome = moonHours * moonHourly;
+    }
+
     // ---- 資產：現金與投資分開算，投資才有複利，這樣「投多少」才真的有差 ----
     // 投資被動收入＝期初部位的當年報酬（年收入＝薪水＋投資被動收入）
     // 這筆錢留在部位裡繼續滾，所以只計入「收入」用來算時薪，不重複加進資產
@@ -916,7 +932,7 @@ function simulateLife(p){
     if (!retired){
       invested = workIncome * investRate;
       investPot += invested;
-      cashPot += workIncome - spend - invested;
+      cashPot += workIncome + moonIncome - spend - invested;
     } else {
       cashPot -= withdraw;
     }
@@ -933,19 +949,21 @@ function simulateLife(p){
     if (broke && brokeYear === null) brokeYear = age;
 
     // ---- 時薪與「為帳單工作的小時」----
-    var income = workIncome + pensionIncome + passiveIncome + gain;
+    var incomeBase = workIncome + pensionIncome + passiveIncome + gain;
+    var income = incomeBase + moonIncome;
     var billHours;
     if (isStudent){
       billHours = 0;                                   // 學生沒在為帳單工作，代價記在學費與學貸上
     } else if (retired && !broke){
       billHours = 0;                                   // 撐得住＝不用再為帳單工作
-    } else if (income > 0){
-      var hourly = income / M.workHoursPerYear;
-      billHours = Math.min(spend / hourly, M.workHoursPerYear);   // 上限就是一年的工時
+    } else if (incomeBase > 0){
+      var hourly = incomeBase / M.workHoursPerYear;
+      billHours = Math.min(spend / hourly, M.workHoursPerYear);   // 本職上限就是一年的工時
     } else {
       billHours = M.workHoursPerYear;
     }
     if (broke) billHours = M.workHoursPerYear;         // 錢用完＝被迫回去工作，一年整個賣掉
+    billHours += moonHours;                            // 本職不夠，超支的部分多兼的時數
 
     // 通勤時數是玩家在天平上填的，不是寫死的
     var choreBase = isStudent ? M.choresStudent
@@ -979,6 +997,8 @@ function simulateLife(p){
       onceCost: Math.round(onceCost),
       assets: Math.round(assets),
       billHours: Math.round(billHours),
+      moonlightHours: Math.round(moonHours),      // 這一年為了補超支多兼的時數
+      moonlightIncome: Math.round(moonIncome),
       choreHours: Math.round(chores),
       commuteHours: (isStudent || (retired && !broke)) ? 0 : Math.round(commuteH),
       freeHours: Math.round(free),
@@ -1804,11 +1824,21 @@ function dailyLeft(p){
   var annual = (lifeTotalMonthly(L) + saveMonthly) * 12 + (p.insurance ? insurancePremium(p.startAge) : 0);
   var maxBillPerDay = PLACEHOLDER_MODEL.workHoursPerYear / 365;
   var bill = H.hourly > 0 ? Math.min(annual / H.hourly / 365, maxBillPerDay) : maxBillPerDay;
+  // 花的錢不能比賺的多：超出本職收入的部分，換算成每天要多兼幾小時
+  var isStu = p.isStudent && (!p.board || p.board.age < gradAgeOf(p));
+  var incomeAnnual = (afterTaxMonthly(p) || 0) * 12;
+  // 只看真的花掉的錢（「每月存起來」不算超支——存不到就是存不到，不是要去兼差）
+  var spendAnnual = lifeTotalMonthly(L) * 12 + (p.insurance ? insurancePremium(p.startAge) : 0);
+  var over = isStu ? 0 : Math.max(0, spendAnnual - incomeAnnual);
+  var moonHourly = H.hourly * PLACEHOLDER_MODEL.moonlightRate;
+  var moon = (over > 0 && moonHourly > 0)
+    ? Math.min(over / moonHourly / 365, PLACEHOLDER_MODEL.moonlightMaxHoursPerDay) : 0;
   var commute = p.commuteMinutes / 60;
   var chore = PLACEHOLDER_MODEL.choresHousework / 365;      // 家務雜務，每天 1 小時
   return {
-    free: Math.max(0, 24 - p.sleepHours - bill - commute - chore),
-    bill: bill, commute: commute, chore: chore, sleep: p.sleepHours
+    free: 24 - p.sleepHours - bill - moon - commute - chore,   // 可以是負的：時間不夠用
+    bill: bill, moon: moon, over: over, moonHourly: moonHourly,
+    commute: commute, chore: chore, sleep: p.sleepHours, annual: annual, spendAnnual: spendAnnual, income: incomeAnnual
   };
 }
 /* 某一年「一天剩幾小時」——比 freeRatio 嚴格一點的版本（兩個都是 PLACEHOLDER 模型）：
@@ -1880,15 +1910,23 @@ function updateLifeFoot(){
   var p = P(), L = p.life;
   var r = simulateLife(previewParams(p));
   var d = dailyLeft(p);
-  var dn = $('lf-daily');
-  dn.innerHTML = d.free.toFixed(1) + '<small>小時</small>';
+  var foot = document.querySelector('.lifefoot');
+  var over = d.moon > 0;
+  if (foot) foot.classList.toggle('over', over);
+  var dn = $('lf-daily'), cap = dn.previousElementSibling;
+  dn.innerHTML = (d.free >= 0 ? d.free.toFixed(1) : '−' + Math.abs(d.free).toFixed(1)) + '<small>小時</small>';
   dn.classList.toggle('low', d.free < 4);
+  if (cap) cap.textContent = d.free >= 0 ? '一天剩' : '時間不夠用';
   var n = $('lf-ratio');
   n.innerHTML = pct(r.freeRatio) + '<small>%</small>';
   n.classList.toggle('low', r.freeRatio < 0.4);
-  $('lf-sum').innerHTML = '一天：睡 ' + d.sleep + '　為帳單 ' + d.bill.toFixed(1) + '　通勤 ' + d.commute.toFixed(1) + '　家務 ' + d.chore.toFixed(1) + '<br>' +
-    '一個月花 <b>' + lifeTotalMonthly(L).toLocaleString('en-US') + '</b> 元　' +
-    (r.brokeYear ? '⚠️ 錢在 <b>' + r.brokeYear + ' 歲</b>用完' : '錢撐到最後，剩 ' + money(r.finalAssets));
+  $('lf-sum').innerHTML = over
+    ? '<b>這樣的生活你的薪水撐不起：每天要多兼 ' + d.moon.toFixed(1) + ' 小時，或者刪掉幾項。</b><br>' +
+      '一個月花 ' + lifeTotalMonthly(L).toLocaleString('en-US') + ' 元，本職稅後只有 ' + Math.round(d.income / 12).toLocaleString('en-US') +
+      '　兼差時薪 ' + Math.round(d.moonHourly) + ' 元'
+    : '一天：睡 ' + d.sleep + '　為帳單 ' + d.bill.toFixed(1) + '　通勤 ' + d.commute.toFixed(1) + '　家務 ' + d.chore.toFixed(1) + '<br>' +
+      '一個月花 <b>' + lifeTotalMonthly(L).toLocaleString('en-US') + '</b> 元　' +
+      (r.brokeYear ? '⚠️ 錢在 <b>' + r.brokeYear + ' 歲</b>用完' : '錢撐到最後，剩 ' + money(r.finalAssets));
 }
 
 /* =====================================================================
@@ -2477,6 +2515,10 @@ function narrate(y, p){
     bits.push('月薪 <b>' + money(y.monthlySalary) + '</b>，這年花掉 <b>' + money(y.spend) + '</b>（房租 ' + money(y.housing * 12) + '／年' +
       (y.loanPay ? '、學貸 ' + money(y.loanPay) : '') + (y.premium ? '、保費 ' + money(y.premium) : '') + '）。');
     bits.push('為帳單工作 <b>' + y.billHours + '</b> 小時，自己的時間 <b>' + y.freeHours + '</b> 小時。');
+  }
+  if (y.moonlightHours > 0){
+    bits.push('<b>這一年你多兼了 ' + y.moonlightHours.toLocaleString('en-US') + ' 小時</b>（大約每天 ' +
+      (y.moonlightHours / 365).toFixed(1) + ' 小時）——薪水撐不起這一年的開銷。');
   }
   return bits.join('　');
 }
@@ -3162,6 +3204,17 @@ function buildPrompt(p){
   });
   if (p.insurance) lines.push('- 保險：' + Math.round(insurancePremium(p.startAge)/12).toLocaleString('en-US') + ' 元／月 → ' + timeLabel(Math.round(insurancePremium(p.startAge)/12), H.hourly));
   lines.push('- 合計每月花 ' + lifeTotalMonthly(L).toLocaleString('en-US') + ' 元，一年 ' + (lifeTotalMonthly(L)*12).toLocaleString('en-US') + ' 元');
+  var dl = dailyLeft(p);
+  if (dl.moon > 0){
+    lines.push('- ⚠️ 這樣的生活我的本職薪水撐不起：每天要多兼 ' + dl.moon.toFixed(1) + ' 小時（兼差時薪抓本職的 8 成，約 ' +
+      Math.round(dl.moonHourly) + ' 元）');
+  }
+  var moonYears = r.years.filter(function(y){ return y.moonlightHours > 0; });
+  if (moonYears.length){
+    var totalMoon = moonYears.reduce(function(s, y){ return s + y.moonlightHours; }, 0);
+    lines.push('- 一生有 ' + moonYears.length + ' 年需要兼差，總共多兼了 ' + Math.round(totalMoon).toLocaleString('en-US') +
+      ' 小時（平均那些年每天多兼 ' + (totalMoon / moonYears.length / 365).toFixed(1) + ' 小時）');
+  }
   lines.push('');
   lines.push('【我一路上做的選擇】');
   if (plog.length){
