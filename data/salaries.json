@@ -1,0 +1,173 @@
+{
+  "source": "https://www.mol.gov.tw/1607/1632/1633/80495/post",
+  "year": 2024,
+  "unit": "新台幣元/月",
+  "note": "主要參考勞動部『職類別薪資調查』（113年7月，僅計經常性薪資，覆蓋工業及服務業全時受僱員工）與行政院主計總處『受僱員工薪資統計』；官方調查僅公布少數具體職業別（如機師、醫師、律師、電信工程師等高薪職類）及七大職類大分類（主管及監督人員、專業人員、技術員及助理專業人員、事務支援人員、服務及銷售工作人員、技藝機械設備操作及組裝人員、基層技術工及勞力工）的中位數／平均，多數常見職業（軟體工程師、行銷企劃、行政人員、業務、餐飲服務、設計師、會計、工廠作業員、司機等）官方統計未單獨列出職業別數字，故改用104人力銀行薪資情報／職務大百科等民間調查資料補充，並於各筆note標明資料性質。『starting_salary』（起薪）與『senior_salary』（資深薪資）優先採用官方薪級表／俸給表或調查中『1年以下年資』『10年以上年資／最高職等』對應數字；找不到官方對應資料者以民間調查的年資分組數字替代，並標明來源。護理師、教師、公務員三類另有官方薪資結構（俸給表／薪級表／衛福部醫院護理服務量調查）可用，故標示為官方，但因俸級/年資/加給差異極大，多數欄位無法給出單一中位數。",
+  "occupations": [
+    {
+      "name": "軟體工程師",
+      "median_monthly": 57000,
+      "average_monthly": 65000,
+      "starting_salary": 50000,
+      "senior_salary": 68000,
+      "is_official": false,
+      "source": "https://blog.104.com.tw/104data-position-salary-2024/",
+      "year": 2024,
+      "note": "104人力銀行2024年薪資報告：『軟體/工程』類職務平均月薪6.5萬居各職務之冠。中位數/起薪/資深薪資依104職務大百科『軟體工程師』(job/2007001004)年資分組推算：1年以下5萬、1-3年5.3萬、3-5年5.7萬、5-10年6萬、10年以上6.8萬。勞動部職類別薪資調查未單獨列出『軟體工程師』職業，僅『專業人員』大類(6.6萬)與『電信工程師』(9.4萬)等相近職類可參考，未計入本筆。"
+    },
+    {
+      "name": "行銷企劃",
+      "median_monthly": 42000,
+      "average_monthly": 42000,
+      "starting_salary": 37000,
+      "senior_salary": 58000,
+      "is_official": false,
+      "source": "https://guide.104.com.tw/salary/job/2004001005?analyze=workexp&salary=monthly",
+      "year": 2024,
+      "note": "104人力銀行職務大百科『行銷企劃』：平均月薪4.2萬，25百分位3.7萬、中位數4.2萬、75百分位4.8萬。另依年資分組（含獎金換算）：1年以下約4.8萬、1-3年約5.1萬、3-5年約5.4萬、5-10年約5.8萬，故資深薪資取5.8萬。官方統計無此職業別細項。"
+    },
+    {
+      "name": "行政人員",
+      "median_monthly": 36000,
+      "average_monthly": 38000,
+      "starting_salary": 33000,
+      "senior_salary": 41000,
+      "is_official": false,
+      "source": "https://guide.104.com.tw/salary/cat/2002001000?type=catjobs&salary=monthly",
+      "year": 2025,
+      "note": "104人力銀行『行政/總務類』薪資報告：2025年月薪中位數約3.4-3.6萬，範圍約3.3-4.1萬。官方勞動部/主計總處統計無獨立『行政人員』職業別數字，僅有『事務支援人員』大類中位數3.9萬可參考（未直接採用，因涵蓋範圍較廣）。起薪/資深薪資為民間調查估計值。"
+    },
+    {
+      "name": "護理師",
+      "median_monthly": null,
+      "average_monthly": 49880,
+      "starting_salary": 53700,
+      "senior_salary": null,
+      "is_official": true,
+      "source": "https://www.mol.gov.tw/1607/1632/1633/80495/post",
+      "year": 2024,
+      "note": "官方數字有兩套且算法不同：①勞動部『職類別薪資調查』僅計經常性薪資，醫療保健業護理人員平均月薪約49,880元；②衛福部113年『醫院護理服務量調查』(445家醫院通報)加計非經常性薪資後，1年以下資歷護理師平均約53,700元(採為起薪)，全體護理人員平均約60,456元。此數字曾引發護理團體質疑『美化數字』與實際起薪落差(工資部分僅約5.2萬)。官方均未公布護理職業別的中位數與資深/最高薪資統計，故列為null。來源：https://www.mohw.gov.tw/cp-16-81753-1.html 、 https://tfc-taiwan.org.tw/analysis-nurse-salary-survey-mol-mohw/"
+    },
+    {
+      "name": "教師（國小/中學）",
+      "median_monthly": null,
+      "average_monthly": null,
+      "starting_salary": 51130,
+      "senior_salary": 90000,
+      "is_official": true,
+      "source": "https://flipedu.parenting.com.tw/article/007648",
+      "year": 2025,
+      "note": "依114學年度公立高級中等以下學校教師薪級表官方數字推算：大學學歷初任教師本薪25,050元+專業加給約23,080元+導師費約3,000元，合計約51,130元(採為起薪，未含年終獎金/考績獎金)。資深/頂薪教師本薪最高約54,160-57,220元(視學歷)，加上高階學術研究加給35,780元，約可達9萬元(採為資深薪資估計，僅供參考，非官方單一統計數字)。官方無公布教師整體平均薪資或中位數（因俸級、加給、導師/行政職務差異極大）。"
+    },
+    {
+      "name": "業務（銷售）",
+      "median_monthly": 37000,
+      "average_monthly": 40000,
+      "starting_salary": 33227,
+      "senior_salary": 50000,
+      "is_official": false,
+      "source": "https://guide.104.com.tw/salary/cat/2005003000?type=catstarting&salary=annual",
+      "year": 2024,
+      "note": "104人力銀行『國內業務人員』依年資之月薪中位數：1年以下33,227元、1-3年35,861元、3-5年37,973元、5-7年39,011元、7年以上40,280元。資深薪資50,000元為估計值（含業績獎金／佣金後可能顯著更高，差異極大，官方統計無此職業別細項）。"
+    },
+    {
+      "name": "餐飲服務人員",
+      "median_monthly": 33000,
+      "average_monthly": 35000,
+      "starting_salary": 30000,
+      "senior_salary": 40000,
+      "is_official": false,
+      "source": "https://www.104.com.tw/jb/jobwiki/stage/2006001001/1",
+      "year": 2024,
+      "note": "104人力銀行職務百科『餐飲服務生』：月薪約3萬至4萬區間，實際職缺常見32,000-35,000元。資深/外場主管職位約3.5-4萬元(採為資深薪資)。官方統計無此職業別細項，僅『服務及銷售工作人員』大類中位數3.6萬可參考。"
+    },
+    {
+      "name": "設計師（平面/UI）",
+      "median_monthly": 55000,
+      "average_monthly": 58000,
+      "starting_salary": 49000,
+      "senior_salary": 73000,
+      "is_official": false,
+      "source": "https://rar.design/posts/designer-salary-2026-taiwan",
+      "year": 2026,
+      "note": "104薪資情報數據：平面設計師月薪中位數1年以下5.8萬、1-3年5.8萬、3-5年6.3萬、5-10年6.5萬、10年以上7.3萬；UI設計師起薪約4.9萬、1-3年5.2萬、3-5年5.6萬、5-10年6.1萬。本筆合併平面與UI取中間值：起薪採UI較低值4.9萬、資深採平面10年以上7.3萬。官方統計無此職業別細項。"
+    },
+    {
+      "name": "會計",
+      "median_monthly": 35435,
+      "average_monthly": 35435,
+      "starting_salary": 30000,
+      "senior_salary": 45000,
+      "is_official": false,
+      "source": "https://tw.indeed.com/career/%E6%9C%83%E8%A8%88%E4%BA%BA%E5%93%A1/salaries",
+      "year": 2024,
+      "note": "Indeed台灣調查：會計人員平均月薪約35,435元。104人力銀行依產業別年資資料顯示，1年以下約29,500-32,556元，7年以上依產業約34,297-61,171元；取整體常見範圍估計起薪3萬、資深4.5萬。官方統計無獨立『會計人員』職業別數字（僅會計師執業人員另有專技統計，本筆不列入，因題目指一般會計人員而非會計師）。"
+    },
+    {
+      "name": "公務員",
+      "median_monthly": null,
+      "average_monthly": null,
+      "starting_salary": 46769,
+      "senior_salary": 111210,
+      "is_official": true,
+      "source": "https://law.exam.gov.tw/LawContent.aspx?id=FL017074",
+      "year": 2025,
+      "note": "依考試院/銓敘部公務人員俸給表（含本俸+專業加給）官方數字：普通考試錄取後起薪約46,769元(採為起薪，另高考三級錄取起薪約59,446元)；簡任第十四職等(文官最高職等)本俸+專業加給約111,210元(採為資深/最高薪資估計)。因公務人員職等跨度極大(委任一職等至簡任十四職等)，官方未公布單一整體平均薪資或中位數，主計總處『全國受僱員工』薪資統計亦不單獨拆分公務人員類別。"
+    },
+    {
+      "name": "工廠作業員",
+      "median_monthly": 35000,
+      "average_monthly": 37000,
+      "starting_salary": 32000,
+      "senior_salary": 45000,
+      "is_official": false,
+      "source": "https://guide.104.com.tw/salary/cat/2010001000?type=catjobs&salary=monthly",
+      "year": 2024,
+      "note": "104人力銀行『操作/技術類』作業員/包裝員薪資報告：月薪範圍3.2萬-4萬，平均月薪3.7萬，25百分位3.2萬、中位數3.5萬、75百分位4萬。資深/領班職位估計約4.5萬。官方勞動部統計『技藝、機械設備操作及組裝人員』大類月薪3.6萬、『基層技術工及勞力工』3.2萬可參考，但未單獨列出『作業員』職業別。"
+    },
+    {
+      "name": "司機（客運/貨運/計程車）",
+      "median_monthly": null,
+      "average_monthly": 45000,
+      "starting_salary": 42000,
+      "senior_salary": 60000,
+      "is_official": false,
+      "source": "https://guide.104.com.tw/salary/job/2011002006?analyze=workexp&salary=monthly",
+      "year": 2024,
+      "note": "此職業涵蓋三種差異極大的受雇/自營型態，無法用單一中位數代表：①大貨車及其他類司機（104資料）：依年資約4.2萬-5.5萬，平均約4.5-5.1萬（本筆average/starting/senior即取此類代表值，senior另參考公車司機含加班費後可達6萬）；②公車/客運司機：104及網路薪資比較約4.5萬-6萬，其中相當比例來自加班費；③計程車司機非受雇薪資制，依交通部112年度官方『計程車營運狀況調查報告』(https://www.motc.gov.tw/uploaddowndoc?file=survey%2F201810161445520.pdf)，專職計程車駕駛人平均每月營業總收入48,766元，扣除油料/保養/保險/停車等成本後平均淨收入26,957元——此為官方數字但性質是營業收入而非薪資，故本筆整體標記is_official為false，僅在note中註記計程車部分為官方調查。"
+    },
+    {
+      "name": "醫師",
+      "median_monthly": null,
+      "average_monthly": 180000,
+      "starting_salary": null,
+      "senior_salary": null,
+      "is_official": true,
+      "source": "https://blog.104.com.tw/113-survey-on-wage-by-occupation-taiwan/",
+      "year": 2024,
+      "note": "勞動部113年7月『職類別薪資調查』官方數字：醫師月薪平均18.0萬元（不分年資、不分科別之全體平均，為官方公布高薪職類前三名之一）。因醫師薪資結構極端分散（住院醫師實領約6-12萬，資深主治醫師視醫院制度、科別與自費業績差異極大，部分可達數十萬至數百萬），官方未公布起薪與中位數等細項，民間報導的住院醫師/主治醫師數字差異過大且非正式統計，故此二欄位留null。"
+    },
+    {
+      "name": "律師",
+      "median_monthly": null,
+      "average_monthly": 92000,
+      "starting_salary": 35000,
+      "senior_salary": 250000,
+      "is_official": true,
+      "source": "https://blog.104.com.tw/113-survey-on-wage-by-occupation-taiwan/",
+      "year": 2024,
+      "note": "平均月薪9.2萬元為勞動部113年7月『職類別薪資調查』官方數字（不分年資之全體平均，官方公布高薪職類前十名之一）。起薪與資深薪資官方未公布，改採民間估計：受僱律師起薪（實習/初執業律師）約3-5萬元、台北初階(1-3年)律師約6-8萬元；資深(8年以上)律師約20-40萬元以上，差異極大且因自行開業與否、地區、案源類型影響甚鉅，此二欄位非官方數據，僅供參考。來源：https://tweducational.com/lawyer-salary/ 、 https://jobboard.lawsnote.com/blogs/213"
+    },
+    {
+      "name": "自由工作者",
+      "median_monthly": null,
+      "average_monthly": null,
+      "starting_salary": null,
+      "senior_salary": null,
+      "is_official": false,
+      "source": null,
+      "year": null,
+      "note": "未找到台灣官方或具公信力的大型調查針對『自由工作者/接案者』整體收入提供中位數或平均值——這類工作者不在勞動部『職類別薪資調查』(以受僱事業單位為調查對象)與主計總處『受僱員工薪資統計』的涵蓋範圍內。民間分享的接案收入差異極大（個案月收入從約2萬元到單月10萬元以上皆有），且依接案類型(設計/寫作/工程/顧問等)、投入時數、是否為主業差異過大而難以標準化比較，故不提供估計數字。業界常討論的『接案保底收入』約為新台幣20,000元/月，但此為經驗法則而非統計數字，未列入欄位。"
+    }
+  ]
+}

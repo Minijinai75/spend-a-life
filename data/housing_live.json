@@ -1,0 +1,75 @@
+{
+  "source": "Twinkle Hub MCP（https://hub.twinkleai.tw）→ 內政部地政司 不動產交易實價查詢：資料集 lvr-rentals（租賃）、lvr-trades（買賣）",
+  "queried_at": "2026-09-04 16:4x（霽野5.1，黑客松當天）",
+  "year": "2025-01-01 起至查詢日",
+  "unit": "月租：新台幣元／月；房價：萬元／坪",
+  "note": "住家用；租金取 3,000～200,000 元區間中位數；房價取單價 2 萬～200 萬元/㎡ 區間中位數 ×3.3058 換算每坪。n＝筆數。桃園／台南在主計處分區支出沒有單列，這裡用實價登錄補上住的成本。",
+  "rent_median_monthly": {
+    "臺北市": {
+      "median": 22600,
+      "ping_median": 19.0,
+      "n": 19020
+    },
+    "新北市": {
+      "median": 18400,
+      "ping_median": 25.1,
+      "n": 36928
+    },
+    "桃園市": {
+      "median": 15000,
+      "ping_median": 28.2,
+      "n": 37846
+    },
+    "臺中市": {
+      "median": 12000,
+      "ping_median": 18.2,
+      "n": 15493
+    },
+    "臺南市": {
+      "median": 12000,
+      "ping_median": 21.4,
+      "n": 10865
+    },
+    "高雄市": {
+      "median": 15000,
+      "ping_median": 26.9,
+      "n": 11699
+    },
+    "基隆市": {
+      "median": 12000,
+      "ping_median": 25.6,
+      "n": 3620
+    }
+  },
+  "rent_1br_banqiao": {
+    "median": 17000,
+    "n": 615,
+    "note": "板橋區 一房 住家用 2025 起"
+  },
+  "price_per_ping_median_wan": {
+    "臺北市": 75.2,
+    "新北市": 43.5,
+    "桃園市": 27.3,
+    "臺中市": 29.5,
+    "臺南市": 25.0,
+    "高雄市": 27.0,
+    "新竹縣": 32.1,
+    "基隆市": 19.4
+  },
+  "live_query": {
+    "mcp": "https://api.twinkleai.tw/mcp/",
+    "tool": "tw_query_rows",
+    "rent_example": {
+      "dataset_id": "lvr-rentals",
+      "where": "iso_trade_date >= '2025-01-01' AND \"主要用途\" = '住家用' AND CAST(\"總額元\" AS DOUBLE) BETWEEN 3000 AND 200000",
+      "columns": [
+        "city",
+        "MEDIAN(CAST(\"總額元\" AS DOUBLE)) AS 月租中位數",
+        "COUNT(*) AS n"
+      ],
+      "group_by": [
+        "city"
+      ]
+    }
+  }
+}

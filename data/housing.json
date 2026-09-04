@@ -1,0 +1,28 @@
+{
+  "source": "https://www.leju.com.tw/map/region?mode=price ; https://www.moi.gov.tw/ ; https://www.cbc.gov.tw/",
+  "year": 2026,
+  "unit": "房價單位為元/坪（新台幣）；租金單位為元/月（新台幣）；房貸利率為年利率百分比",
+  "note": "房價：官方內政部不動產資訊平台僅提供『住宅價格指數』（無絕對金額，2025Q4為最新公告），故每坪均價改採『樂居』整合內政部實價登錄實際成交資料所算出的近一年成交均價（非業者開價估計，是把政府實價登錄原始成交資料做統計，但樂居本身是民間平台，故標記 is_official:false）。租金：內政部『租金統計』（依租金補貼有效租約樣本，115年/2026年上半年，基準日2026年3月底）僅公布六都中台北、新北、桃園的中位數，台中的數字來自台灣房屋集團趨勢中心分析內政部同批資料，台南、高雄官方中位數在公開報導中未查到，改標 null 並附591網站近3個月分租套房中位數作參考（口徑不同，非同一統計方法，僅供對照）。房貸利率為央行公布五大銀行（台銀、土銀、合庫、一銀、華南）新承作『購屋』貸款加權平均利率，非專指30年期，央行未單獨公布依貸款年期分類的平均利率。",
+  "housing_price_per_ping": {
+    "台北市": {"amount": 1060000, "source": "https://www.leju.com.tw/map/region?mode=price&city=A", "year": 2026, "is_official": false, "note": "樂居整合內政部實價登錄近一年成交均價，非官方直接發布數字"},
+    "新北市": {"amount": 596500, "source": "https://www.leju.com.tw/map/region?mode=price&city=F", "year": 2026, "is_official": false, "note": "樂居整合內政部實價登錄近一年成交均價"},
+    "桃園市": {"amount": 381700, "source": "https://www.leju.com.tw/map/region?city=H", "year": 2026, "is_official": false, "note": "樂居整合內政部實價登錄近一年成交均價"},
+    "台中市": {"amount": 436000, "source": "https://www.leju.com.tw/map/region?mode=price&city=B", "year": 2026, "is_official": false, "note": "樂居整合內政部實價登錄近一年成交均價；同期內政部實價統計另有2025Q3年增率報導提及台中每坪29.9萬元，口徑（含車位/區域加權方式）與樂居不同，僅供對照"},
+    "台南市": {"amount": 324000, "source": "https://www.leju.com.tw/map/region?city=D", "year": 2026, "is_official": false, "note": "樂居整合內政部實價登錄近一年成交均價"},
+    "高雄市": {"amount": 331900, "source": "https://www.leju.com.tw/map/region?city=E", "year": 2026, "is_official": false, "note": "樂居整合內政部實價登錄近一年成交均價；2025Q3內政部實價統計報導另提及高雄每坪26.2萬元，口徑不同，僅供對照"}
+  },
+  "rent_median_monthly": {
+    "台北市": {"amount": 12500, "source": "https://www.cna.com.tw/news/aipl/202608130273.aspx", "year": 2026, "is_official": true, "note": "內政部115年（2026）上半年租金統計中位數，樣本為租金補貼有效租約"},
+    "新北市": {"amount": 13000, "source": "https://news.pts.org.tw/article/822407", "year": 2026, "is_official": true, "note": "內政部115年上半年租金統計中位數，六都最高"},
+    "桃園市": {"amount": 10000, "source": "https://www.ettoday.net/news/20260813/3218864.htm", "year": 2026, "is_official": true, "note": "內政部115年上半年租金統計中位數"},
+    "台中市": {"amount": 7800, "source": "https://news.nextapple.com/property/20260820/A9016DE4EE9EE8709BEDD8E9542E8EC5", "year": 2026, "is_official": true, "note": "內政部115年上半年租金統計中位數，經台灣房屋集團趨勢中心分析內政部資料後對外公布"},
+    "台南市": {"amount": null, "source": "https://rent.591.com.tw/market/region?region_id=15&shape=0", "year": 2026, "is_official": false, "note": "未找到官方中位數，最接近替代來源是591租屋網近3個月中位數（依房型分開統計，非官方全類型混合中位數）：分租套房7,000元、獨立套房7,500元、1房13,000元、2房20,000元、3房23,000元"},
+    "高雄市": {"amount": null, "source": "https://rent.591.com.tw/market/region?region_id=17&shape=0", "year": 2026, "is_official": false, "note": "未找到官方中位數，最接近替代來源是591租屋網近3個月中位數（依房型分開統計，非官方全類型混合中位數）：分租套房7,300元、獨立套房7,800元、1房16,000元、雅房5,000元"}
+  },
+  "mortgage_rate_30yr": {
+    "rate_percent": 2.322,
+    "source": "https://www.cbc.gov.tw/",
+    "year": 2026,
+    "note": "央行公布五大銀行（台灣銀行、土地銀行、合作金庫、第一銀行、華南銀行）2026年5月新承作『購屋』貸款加權平均利率，為所有承作年期混合的整體平均值，央行未單獨公布『30年期』專屬平均利率；同批資料另顯示2026年1月曾達2.327%（17年新高），7月官方平均約2.322%~2.29%區間浮動"
+  }
+}
