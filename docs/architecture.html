@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-Hant-TW">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>活到老，花到老｜系統架構</title>
+<style>
+:root{
+  --blue:#cfe3ff;
+  --blue-deep:#7fa9f0;
+  --purple:#e4d8ff;
+  --purple-deep:#a58bea;
+  --ink:#1f2340;
+  --ink2:#5a6088;
+  --ink3:#8b91b4;
+  --card:#ffffff;
+  --line:#e3e8f7;
+  --shadow:0 2px 10px rgba(60,80,160,.10);
+  --shadow-up:0 8px 24px rgba(60,80,160,.16);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:system-ui,-apple-system,"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif;
+  color:var(--ink);
+  background:linear-gradient(170deg,var(--blue) 0%,#eef3ff 45%,var(--purple) 100%);
+  font-size:16px;
+  line-height:1.55;
+}
+.page{max-width:1200px;margin:0 auto;padding:30px 34px 40px}
+
+/* ---------- 頁首 ---------- */
+header.top{text-align:center;margin-bottom:8px}
+h1{font-size:38px;font-weight:900;letter-spacing:-.01em;margin:0}
+.subtitle{font-size:19px;color:var(--ink2);margin-top:8px;font-weight:600}
+
+.legend{display:flex;justify-content:center;gap:26px;margin:16px 0 6px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink2);font-weight:700}
+.legend-line{width:30px;height:0;border-top:3px solid var(--blue-deep);display:inline-block}
+.legend-line.dashed{border-top:3px dashed var(--purple-deep)}
+
+/* ---------- 流程容器 ---------- */
+.flow{display:flex;flex-direction:column;align-items:stretch}
+
+.node{background:var(--card);border-radius:20px;padding:18px 24px;box-shadow:var(--shadow);border:1px solid var(--line);page-break-inside:avoid}
+
+.num{display:inline-flex;align-items:center;justify-content:center;width:27px;height:27px;border-radius:50%;
+  background:var(--ink);color:#fff;font-size:14px;font-weight:900;flex:0 0 auto;font-family:ui-monospace,Consolas,monospace}
+
+/* 手機節點 */
+.node-browser{display:flex;align-items:center;gap:16px;max-width:480px;margin:0 auto;padding:14px 26px}
+.phone-icon{width:34px;height:58px;border:3px solid var(--ink);border-radius:9px;position:relative;
+  background:linear-gradient(160deg,var(--blue),var(--purple));flex:0 0 auto}
+.phone-icon::after{content:'';position:absolute;left:50%;bottom:6px;width:13px;height:3px;background:var(--ink);
+  border-radius:2px;transform:translateX(-50%)}
+.node-browser .node-h{font-size:19px;font-weight:900;display:flex;align-items:center;gap:10px}
+.node-browser .node-s{font-size:13.5px;color:var(--ink2);margin-top:4px}
+
+/* 節點標題列 */
+.node-title{font-size:22px;font-weight:900;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.tag{font-size:13px;font-weight:700;color:var(--purple-deep);background:#f4f0ff;padding:3px 12px;border-radius:999px}
+.tag-optional{color:#8a6d1f;background:#fdf3da}
+
+/* 三欄並排 */
+.cols3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:4px}
+@media (max-width:880px){.cols3{grid-template-columns:1fr}}
+.col{background:linear-gradient(160deg,#f7f9ff,#faf7ff);border:1px solid var(--line);border-radius:14px;padding:15px 17px}
+.col-h{font-size:18px;font-weight:800;margin-bottom:9px}
+.s{font-size:15.5px;color:var(--ink2);line-height:1.65;margin:7px 0}
+.s.muted{font-size:13px;color:var(--ink3)}
+
+.scene-list{margin:0;padding-left:22px;font-size:16px;line-height:1.95;color:var(--ink)}
+.scene-list .sub{display:block;font-size:13px;color:var(--ink3);margin-top:1px;line-height:1.5}
+
+.io-row{font-size:15.5px;line-height:1.75;margin-top:9px}
+.io-row b{display:inline-block;color:#fff;background:var(--blue-deep);border-radius:6px;padding:2px 9px;
+  font-size:13px;margin-right:8px;font-weight:800;vertical-align:2px}
+
+.flow-caption{margin-top:16px;font-size:14.5px;color:var(--ink2);line-height:1.75;background:#f4f7ff;
+  border-radius:12px;padding:11px 16px;border:1px dashed var(--line)}
+.flow-caption b{color:var(--ink)}
+
+/* 六組資料卡 */
+.grid6{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:4px}
+@media (max-width:880px){.grid6{grid-template-columns:repeat(2,1fr)}}
+.dcard{background:linear-gradient(160deg,#f7f9ff,#faf7ff);border:1px solid var(--line);border-radius:14px;
+  padding:13px 14px;text-align:center}
+.d-t{font-size:16.5px;font-weight:800}
+.d-s{font-size:13.5px;color:var(--ink2);margin-top:5px}
+.d-f{font-size:12px;color:var(--ink3);margin-top:7px;font-family:ui-monospace,Consolas,monospace;
+  overflow-wrap:break-word}
+
+/* 可選外層（虛線） */
+.node-optional{border-style:dashed;border-width:2px;border-color:var(--purple-deep);background:#fdfcff}
+
+/* 箭頭（CSS 畫的，不用 SVG） */
+.arrow{display:flex;flex-direction:column;align-items:center;margin:6px auto;text-align:center}
+.arrow .lbl{font-size:13px;color:var(--ink3);margin-bottom:3px;font-weight:600}
+.arrow .stem{width:4px;height:26px;background:var(--blue-deep);border-radius:2px}
+.arrow .head{width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;
+  border-top:13px solid var(--blue-deep);margin-top:-1px}
+.arrow.dashed .stem{width:0;height:28px;border-left:3px dashed var(--purple-deep)}
+.arrow.dashed .head{border-top-color:var(--purple-deep)}
+
+/* 底部零後端註記 */
+.banner{margin-top:24px;text-align:center;font-size:18px;font-weight:800;color:var(--ink);
+  background:linear-gradient(120deg,var(--blue),var(--purple));border-radius:16px;padding:17px 20px;
+  box-shadow:var(--shadow-up)}
+.banner .sub{display:block;font-size:13.5px;font-weight:600;color:var(--ink2);margin-top:5px}
+
+.meta{text-align:center;font-size:12px;color:var(--ink3);margin-top:16px}
+
+/* ---------- 列印（A4 橫向） ---------- */
+@page{size:A4 landscape;margin:10mm}
+@media print{
+  body{background:#fff}
+  .page{padding:0;max-width:100%}
+  .node,.banner{box-shadow:none}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="top">
+    <h1>活到老，花到老｜系統架構</h1>
+    <p class="subtitle">單頁靜態網頁：所有計算在瀏覽器裡完成</p>
+  </header>
+
+  <div class="legend">
+    <div class="legend-item"><span class="legend-line"></span>核心必經路徑（瀏覽器 → 遊戲 → 資料）</div>
+    <div class="legend-item"><span class="legend-line dashed"></span>可選外層（虛線＝不需要也能完整玩）</div>
+  </div>
+
+  <div class="flow">
+
+    <!-- ① 玩家手機瀏覽器 -->
+    <div class="node node-browser">
+      <div class="phone-icon"></div>
+      <div>
+        <div class="node-h"><span class="num">1</span>玩家手機瀏覽器</div>
+        <div class="node-s">Chrome／Safari 直接開網址，直式優先，不必安裝 App</div>
+      </div>
+    </div>
+
+    <div class="arrow">
+      <span class="lbl">開啟網址，或 file:// 本機直接開檔</span>
+      <div class="stem"></div><div class="head"></div>
+    </div>
+
+    <!-- ② game/index.html -->
+    <div class="node node-main">
+      <div class="node-title"><span class="num">2</span>game/index.html<span class="tag">單一 HTML 檔・原生 JavaScript・零框架</span></div>
+
+      <div class="cols3">
+        <div class="col">
+          <div class="col-h">UI 六幕</div>
+          <ol class="scene-list">
+            <li>標題頁</li>
+            <li>角色創建六步<span class="sub">性別／年齡／職業／城市／保險／投資</span></li>
+            <li>角色卡確認</li>
+            <li>我要的生活（加減表）</li>
+            <li>蛇形棋盤<span class="sub">擲骰前進，機會／命運事件卡</span></li>
+            <li>終局（三樣帶走）</li>
+          </ol>
+        </div>
+
+        <div class="col">
+          <div class="col-h">simulateLife() 純函式</div>
+          <p class="s muted">不碰 DOM，可單獨抽出來測</p>
+          <div class="io-row"><b>輸入</b>角色參數（性別／職業／城市／學貸／保險／投資）＋玩家選擇＋骰子種子（mulberry32 決定性亂數，同種子必重現同一局）</div>
+          <div class="io-row"><b>輸出</b>逐年結果：每年的錢／自由時間／一天剩幾小時，以及幾歲能停（retireAge）、錢用完那年（brokeYear）</div>
+        </div>
+
+        <div class="col">
+          <div class="col-h">數據載入</div>
+          <p class="s">fetch('../data/*.json')<br>（共 7 個檔）</p>
+          <p class="s">失敗 → 用內嵌快照<br><b style="color:var(--ink)">EMBEDDED_FALLBACK</b></p>
+          <p class="s muted">沒有伺服器、沒有網路，file:// 開檔也能跑完整局</p>
+        </div>
+      </div>
+
+      <div class="flow-caption">
+        資料流：<b>UI 六幕</b> 收集角色參數／玩家選擇／骰子種子 → 交給 <b>simulateLife</b> 逐年結算；<b>數據載入</b> 把六組統計基準值餵給 <b>simulateLife</b>；算完的結果即時顯示回 <b>UI 六幕</b>（存款、自由時間跳動）。
+      </div>
+    </div>
+
+    <div class="arrow">
+      <span class="lbl">fetch('../data/*.json') → 讀六組統計快照</span>
+      <div class="stem"></div><div class="head"></div>
+    </div>
+
+    <!-- ③ data/ -->
+    <div class="node node-data">
+      <div class="node-title"><span class="num">3</span>data/<span class="tag">六組台灣官方統計快照</span></div>
+      <div class="grid6">
+        <div class="dcard"><div class="d-t">家庭收支調查</div><div class="d-s">行政院主計總處</div><div class="d-f">expenses.json</div></div>
+        <div class="dcard"><div class="d-t">薪資中位數</div><div class="d-s">行政院主計總處</div><div class="d-f">salaries.json</div></div>
+        <div class="dcard"><div class="d-t">簡易生命表</div><div class="d-s">內政部統計處</div><div class="d-f">life_expectancy.json</div></div>
+        <div class="dcard"><div class="d-t">勞保年金／勞退新制</div><div class="d-s">勞動部勞工保險局</div><div class="d-f">pension.json</div></div>
+        <div class="dcard"><div class="d-t">實價登錄租金／房價中位數</div><div class="d-s">內政部地政司</div><div class="d-f">housing.json／housing_live.json</div></div>
+        <div class="dcard"><div class="d-t">人生事件成本估算</div><div class="d-s">各公開研究與報導</div><div class="d-f">life_events.json</div></div>
+      </div>
+    </div>
+
+    <div class="arrow dashed">
+      <span class="lbl">以下皆為選用，沒有也能完整玩一局</span>
+      <div class="stem"></div><div class="head"></div>
+    </div>
+
+    <!-- ④ 可選外層 -->
+    <div class="node node-optional">
+      <div class="node-title"><span class="num">4</span>可選外層<span class="tag tag-optional">虛線＝選用</span></div>
+      <div class="cols3">
+        <div class="col">
+          <div class="col-h">Twinkle Hub MCP</div>
+          <p class="s">→ 內政部實價登錄 API<br>六都租金／房價中位數，即時層</p>
+          <p class="s muted">開發期用來更新 data/housing_live.json 快照，不是玩家對局當下呼叫</p>
+        </div>
+        <div class="col">
+          <div class="col-h">Gemini 3.8 Flash</div>
+          <p class="s">← config.js 填 Gemini API Key 才開「AI 加料開關」</p>
+          <p class="s muted">開局生成專屬牌組、每格一句家人口氣；沒有 key 就跳過，不報錯</p>
+        </div>
+        <div class="col">
+          <div class="col-h">玩家自己的 ChatGPT／Claude</div>
+          <p class="s">← 終局一鍵複製「給 AI 的 prompt」帶過去問</p>
+          <p class="s muted">遊戲本身不呼叫任何對話 AI，由玩家自己貼上聊</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="banner">
+    零後端・零 API 也能完整玩一局
+    <span class="sub">整支遊戲就是一個 HTML 檔＋瀏覽器——GitHub Pages 直接開，file:// 也能玩</span>
+  </div>
+
+  <p class="meta">依 README「系統架構」與 game/index.html 原始碼整理｜spend-a-life｜26-09-05</p>
+
+</div>
+</body>
+</html>
