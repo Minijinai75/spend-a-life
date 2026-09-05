@@ -2254,7 +2254,7 @@ function defaultLife(p){
     housing: rentOf(p).amount,
     mealPrice: Math.max(50, Math.round(e * 0.2904 / 90 / 5) * 5),  // 主計處：食品 15.3% ＋ 餐廳旅館 13.74%
     transport: Math.round(e * 0.1151 / 100) * 100,                  // 運輸交通及資通訊 11.51%
-    travelYear: 40000,
+    travelYear: 30000,
     pet: 0,
     parents: p.livingAtHome ? 5000 : 0,   // 住家裡就給點家用
     other: Math.round(e * 0.3549 / 100) * 100,                      // 醫療、衣著、休閒教育、家具、金融
@@ -2284,7 +2284,7 @@ var LIFE_ROWS = [
   { key:'travelYear', name:'旅行（一年花多少）', min:0, max:300000, step:5000,
     cost:function(L){ return Math.round((L.travelYear || 0) / 12); },
     desc:function(L){ return (L.travelYear ? '一年 ' + L.travelYear.toLocaleString('en-US') + ' 元' : '不出去玩') +
-      '　·　一年出國一趟大約 4～6 萬'; } },
+      '　·　日本玩五天大約 2～3 萬，填你一年真的會花的'; } },
   { key:'pet', name:'寵物', min:0, max:10000, step:500,
     cost:function(L){ return L.pet || 0; },
     desc:function(L){ return (L.pet ? '' : '沒有養　·　') + '貓狗兔魚都算，填你會花的'; } },
