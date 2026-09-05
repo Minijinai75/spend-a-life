@@ -488,6 +488,30 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
   display:block;width:100%;padding:12px;border-radius:12px;background:#fff;border:1.5px solid var(--line);
   font-weight:800;font-size:14px;text-align:left;color:var(--ink2);
 }
+
+/* 24 小時分段條 */
+.daybar{display:flex;height:30px;border-radius:9px;overflow:hidden;border:1px solid var(--line);margin-top:8px;
+  font-size:10.5px;font-weight:800;color:#fff;letter-spacing:-.01em}
+.daybar i{display:flex;align-items:center;justify-content:center;font-style:normal;white-space:nowrap;overflow:hidden;
+  transition:width .5s cubic-bezier(.22,1,.36,1)}
+.daybar .sleep{background:#9aa0c0}
+.daybar .bill{background:#e8735a}
+.daybar .commute{background:#e0a93c}
+.daybar .chore{background:#b6a0ee}
+.daybar .free{background:#3fae83}
+.daybar.sm{height:22px;font-size:9.5px;margin-top:6px}
+.daylegend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;font-size:10px;color:var(--ink2);margin-top:6px}
+.daylegend i{display:inline-block;width:9px;height:9px;border-radius:3px;margin-right:3px;vertical-align:-1px}
+
+/* 調整人生 */
+.tune{border:1px solid var(--line);border-radius:14px;padding:11px;margin-top:10px;background:#fff}
+.tune h4{font-size:14px}
+.tune .now{font-size:12px;color:var(--ink2);margin-top:3px}
+.tune .res{margin-top:8px;padding:9px 10px;border-radius:11px;background:linear-gradient(160deg,var(--blue),var(--purple));
+  font-size:13px;font-weight:700;line-height:1.55}
+.tune .res b{font-variant-numeric:tabular-nums}
+.tune input[type=range]{margin-top:4px}
+#salchart{display:block;width:100%;height:150px}
 </style>
 </head>
 <body>
@@ -497,7 +521,7 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
 <section id="sc-title" class="scene on">
   <div class="card">
     <p class="eyebrow">BUILDMODE GEN-AI HACKATHON 2026｜T058 同簷</p>
-    <h1 class="title" style="margin-top:6px">活到老，<br>花到老</h1>
+    <h1 class="title" style="margin-top:6px">活到老，花到老</h1>
     <p class="subtitle">不是算一生要花多少錢，<br>是算<b>一生有多少時間是自己的</b>。</p>
     <div class="hr"></div>
     <p style="font-size:13.5px;color:var(--ink2);line-height:1.75">
@@ -609,7 +633,8 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
     </div>
     <div class="freewrap">
       <div class="freelab"><span id="hud-bill">今年每天為帳單工作 —</span><span id="hud-free-n">—</span></div>
-      <div class="freebar"><i id="hud-free-bar"></i><span class="eaten" id="hud-eaten"></span></div>
+      <div id="hud-daybar"></div>
+      <div class="freebar" style="height:5px;margin-top:5px"><i id="hud-free-bar"></i><span class="eaten" id="hud-eaten"></span></div>
     </div>
     <div class="turnbar" id="turnbar"></div>
   </div>
@@ -657,6 +682,21 @@ input[type=range]::-moz-range-thumb{width:22px;height:22px;border:3px solid #fff
       <div class="s"><b id="e-broke">—</b><span>錢用完那年</span></div>
     </div>
     <div id="verdict-slot"></div>
+    <div id="end-daybar"></div>
+  </div>
+
+  <div class="card" id="tune-card">
+    <p class="eyebrow">調整人生</p>
+    <h3 class="title" style="font-size:19px;margin-top:4px">如果當初…</h3>
+    <p class="hint">同一顆骰子、同一串事情，只換掉你的設定。改一格，下面的數字馬上跟著動。</p>
+    <div id="tune-body"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:17px">你的薪水追得上這樣的生活嗎</h3>
+    <canvas id="salchart"></canvas>
+    <p class="hint" id="sal-legend"></p>
+    <p class="hint" id="sal-cross" style="font-size:13px;color:var(--ink)"></p>
   </div>
 
   <div class="card" id="runs-card" style="display:none">
@@ -742,6 +782,7 @@ var PLACEHOLDER_MODEL = {
   choresStudent: 1500,              // 上課＋作業＋通勤：學生沒在為帳單工作，但時間也不是全自由
   netSalaryRatio: 0.86,             // 勞健保自付＋所得稅後的實拿比例
   seniorityYears: 25,               // 幾年爬到「資深薪」
+  seniorGrowth: 1.35,               // 自己填月薪時，做久了大約爬到起薪的幾倍
   seniorityCurve: 0.7,              // 曲線指數，<1＝前期漲比較快
   familyFactor: {                   // 生活支出相對「一個人」的倍率
     single: 1.00,
@@ -880,6 +921,10 @@ function simulateLife(p){
   var housingEndAge = null, housingAfter = housingNow;
 
   var salary = Object.assign({ start:0, senior:0, volatility:0 }, p.salary || {});
+  // 玩家自己填了月薪就直接用，做久了照 seniorGrowth 往上爬
+  if (p.salaryMonthly){
+    salary = { start: p.salaryMonthly, senior: Math.round(p.salaryMonthly * M.seniorGrowth), volatility: 0 };
+  }
   var loanAnnual = amortizeAnnual(stu.loanAmount, stu.loanRate, stu.loanYears);
   var loanEndAge = stu.active && stu.loanAmount > 0 ? stu.gradAge + stu.loanYears - 1 : null;
 
@@ -1403,7 +1448,8 @@ function newPlayer(i){
     loanAmount: 300000,
     city: '台北市',
     insurance: false,
-    investRate: 0.2,
+    salaryMonthly: 40000,
+    investRate: 0,
     scenario: 0.06,
     retireAge: 65,
     sleepHours: 7.5,        // 每天睡幾小時（第六步的滑桿）
@@ -1464,7 +1510,8 @@ function setPortrait(imgEl, url){
 /* =====================================================================
    角色創建：六步，每步一個畫面
    ===================================================================== */
-var STEP_TITLES = ['你是誰','幾歲了','靠什麼吃飯','住哪','要不要保險','薪水怎麼放'];
+var STEP_TITLES = ['你是誰','幾歲了','你的月薪','住哪'];
+var LAST_STEP = 3;
 
 function startCreate(){
   G.players = [];
@@ -1478,23 +1525,66 @@ function renderStep(){
   var p = P();
   $('cr-who').textContent = G.playerCount > 1 ? ('玩家 ' + (G.creating + 1) + ' ／ ' + G.playerCount) : '角色創建';
   $('cr-title').textContent = STEP_TITLES[G.step];
-  var st = $('cr-steps').children;
-  for (var i = 0; i < st.length; i++){
-    st[i].className = i === G.step ? 'on' : (i < G.step ? 'done' : '');
+  var st = $('cr-steps');
+  st.innerHTML = '';
+  for (var i = 0; i < STEP_TITLES.length; i++){
+    var bar = document.createElement('i');
+    bar.className = i === G.step ? 'on' : (i < G.step ? 'done' : '');
+    st.appendChild(bar);
   }
   var b = $('cr-body');
   b.innerHTML = '';
-  ({0:stepGender,1:stepAge,2:stepJob,3:stepCity,4:stepInsurance,5:stepInvest})[G.step](b, p);
+  ({0:stepGender,1:stepAge,2:stepSalary,3:stepCity})[G.step](b, p);
   $('cr-back').textContent = G.step === 0 ? '← 回首頁' : '← 上一步';
-  $('cr-next').textContent = G.step === 5 ? '完成角色 →' : '下一步 →';
+  $('cr-next').textContent = G.step === LAST_STEP ? '完成角色 →' : '下一步 →';
   syncNext();
 }
 function syncNext(){
   var p = P();
   var ok = true;
-  if (G.step === 2) ok = !!p.job || p.isStudent;
+  if (G.step === 2) ok = p.isStudent || p.salaryMonthly > 0;
   $('cr-next').disabled = !ok;
 }
+/* ---- 第三步：自己填月薪，不知道就翻職業中位數 ---- */
+var SALARY_MIN = 25000, SALARY_MAX = 200000, SALARY_STEP = 1000;
+function stepSalary(b, p){
+  b.innerHTML =
+    '<p class="hint">填你現在（或想像中）的月薪，稅前。之後每一項開銷要花你幾小時，都是用這個算的。</p>' +
+    '<div class="slider-row" style="margin-top:14px">' +
+      '<div class="numrow" style="flex:1"><input class="numin" id="sal-num" type="number" inputmode="numeric" ' +
+      'min="' + SALARY_MIN + '" max="' + SALARY_MAX + '" step="' + SALARY_STEP + '"><span class="unit">元／月</span></div>' +
+    '</div>' +
+    '<input id="sal-range" type="range" min="' + SALARY_MIN + '" max="' + SALARY_MAX + '" step="' + SALARY_STEP + '">' +
+    '<p class="hint" id="sal-note"></p>' +
+    '<button class="foldbtn" id="sal-fold" style="margin-top:12px">不知道填多少？用職業中位數 ▾</button>' +
+    '<div id="job-wrap" hidden><div class="jobs" id="job-list"></div><p class="hint" id="job-note" style="margin-top:10px"></p></div>' +
+    '<div id="stu-extra"></div>';
+
+  var num = $('sal-num'), rng = $('sal-range');
+  function draw(){
+    num.value = p.salaryMonthly; rng.value = p.salaryMonthly;
+    var take = Math.round(p.salaryMonthly * PLACEHOLDER_MODEL.netSalaryRatio);
+    $('sal-note').innerHTML = p.isStudent
+      ? '你選了學生，念書的這幾年沒有薪水，畢業那一格再決定要做什麼。'
+      : '稅、勞健保扣完大約實拿 <b>' + take.toLocaleString('en-US') + '</b> 元，時薪大約 ' +
+        Math.round(take / (PLACEHOLDER_MODEL.workHoursPerYear / 12)) + ' 元。';
+  }
+  function set(v){
+    v = Math.max(SALARY_MIN, Math.min(SALARY_MAX, isNaN(v) ? SALARY_MIN : Math.round(v)));
+    p.salaryMonthly = v; p.isStudent = false; p.job = null;
+    draw(); drawJobs(p); syncNext();
+  }
+  num.oninput = function(){ set(parseFloat(num.value)); };
+  rng.oninput = function(){ set(parseFloat(rng.value)); };
+  $('sal-fold').onclick = function(){
+    var w = $('job-wrap');
+    w.hidden = !w.hidden;
+    $('sal-fold').textContent = w.hidden ? '不知道填多少？用職業中位數 ▾' : '收起來 ▴';
+  };
+  drawJobs(p);
+  draw();
+}
+
 
 function stepGender(b, p){
   b.innerHTML = '<p class="hint">會影響兩件事：預計活到幾歲，還有薪水的起跑點。</p>' +
@@ -1535,6 +1625,22 @@ function stepAge(b, p){
   }
   r.oninput = function(){ p.startAge = parseInt(r.value, 10); if (p.retireAge <= p.startAge) p.retireAge = Math.min(65, p.startAge + 5); draw(); };
   draw();
+
+  // 睡眠併在這一步：它決定「一天剩幾小時」的分母
+  var sw = document.createElement('div');
+  sw.className = 'field';
+  sw.innerHTML = '<label>每天睡幾小時</label>' +
+    '<div class="slider-row"><input id="sleep-range" type="range" min="5" max="10" step="0.5">' +
+    '<div class="agebig" id="sleep-num" style="font-size:26px">7.5<span>小時</span></div></div>' +
+    '<p class="hint" id="sleep-note"></p>';
+  b.appendChild(sw);
+  var sr = $('sleep-range'); sr.value = p.sleepHours;
+  function drawSleep(){
+    $('sleep-num').innerHTML = p.sleepHours + '<span>小時</span>';
+    $('sleep-note').textContent = '一天醒著 ' + (24 - p.sleepHours) + ' 小時。剩下多少是自己的，就從這裡扣起。';
+  }
+  sr.oninput = function(){ p.sleepHours = parseFloat(sr.value); drawSleep(); };
+  drawSleep();
 }
 
 function stepJob(b, p){
@@ -1569,8 +1675,12 @@ function drawJobs(p){
     x.innerHTML = '<div class="je">' + jobEmoji(j.name) + '</div><div class="jn">' + esc(j.name) + '</div>' +
       '<div class="jm">起薪 ' + money(j.start) + '　做久了 ' + money(j.senior) + '</div>';
     x.onclick = function(){
-      p.isStudent = false; p.job = j; drawJobs(p); drawStudentExtra(p);
-      $('job-note').textContent = esc(j.name) + '：薪水走台灣的實際行情，會隨年資往上爬。';
+      p.isStudent = false; p.job = j;
+      p.salaryMonthly = Math.round(j.start * (PLACEHOLDER_GENDER[p.gender] || 1));
+      if ($('sal-num')) { $('sal-num').value = p.salaryMonthly; $('sal-range').value = p.salaryMonthly; }
+      if ($('sal-note')) $('sal-note').innerHTML = esc(j.name) + '：起薪帶進來了，你也可以自己再改。';
+      drawJobs(p); drawStudentExtra(p);
+      $('job-note').textContent = esc(j.name) + '：做久了大約爬到 ' + money(Math.round(j.senior * (PLACEHOLDER_GENDER[p.gender] || 1))) + '。';
       syncNext();
     };
     el.appendChild(x);
@@ -1732,13 +1842,13 @@ function showRoleCard(){
   $('rl-name').textContent = p.name;
   $('rl-job').textContent = p.isStudent
     ? '學生（' + (p.school === 'private' ? '私立' : '公立') + '）→ ' + gradAgeOf(p) + ' 歲畢業再選職業'
-    : p.job.name;
+    : (p.job ? p.job.name : '月薪 ' + money(p.salaryMonthly));
   // 點任何一個都回到那一步重選
   $('rl-where').innerHTML = [
     { t: p.city, step: 3 },
     { t: p.startAge + ' 歲', step: 1 },
-    { t: p.insurance ? '有保險' : '沒保險', step: 4 },
-    { t: p.investRate ? '每月存 ' + pct(p.investRate) + '%' : '不存錢', step: 5 }
+    { t: '睡 ' + p.sleepHours + ' 小時', step: 1 },
+    { t: p.isStudent ? '學生' : '月薪 ' + money(p.salaryMonthly), step: 2 }
   ].map(function(x){ return '<button type="button" class="editchip" data-step="' + x.step + '">' + esc(x.t) + ' ✎</button>'; }).join('');
   Array.prototype.forEach.call($('rl-where').querySelectorAll('.editchip'), function(btn){
     btn.onclick = function(){ G.step = parseInt(btn.getAttribute('data-step'), 10); renderStep(); go('create'); };
@@ -1746,7 +1856,7 @@ function showRoleCard(){
   $('rl-input').value = p.name;
 
   var rent = cityRent(p.city);
-  var salary = p.isStudent ? 0 : Math.round(p.job.start * PLACEHOLDER_GENDER[p.gender]);
+  var salary = p.isStudent ? 0 : (p.salaryMonthly || 0);
   $('rl-salary').textContent = p.isStudent ? '0' : money(salary);
   $('rl-rent').textContent = money(rent.amount);
   $('rl-debt').textContent = (p.isStudent && p.hasLoan) ? money(p.loanAmount) : '0';
@@ -1757,7 +1867,7 @@ function showRoleCard(){
     if (p.hasLoan) note.push('學貸 ' + money(p.loanAmount) + '，畢業後每年還約 ' +
       amortizeAnnual(p.loanAmount, PLACEHOLDER_STUDENT.loanRate, PLACEHOLDER_STUDENT.loanYears).toLocaleString('en-US') + ' 元，攤 ' + PLACEHOLDER_STUDENT.loanYears + ' 年。');
   } else {
-    note.push('做久了月薪會爬到 ' + money(Math.round(p.job.senior * PLACEHOLDER_GENDER[p.gender])) + ' 左右。');
+    note.push('做久了月薪會爬到 ' + money(Math.round(p.salaryMonthly * PLACEHOLDER_MODEL.seniorGrowth)) + ' 左右。');
   }
   note.push('這局會從 ' + p.startAge + ' 歲走到 ' + lifeEndAge(p.gender) + ' 歲。');
   $('rl-note').textContent = note.join('　');
@@ -2000,12 +2110,11 @@ function updateLifeFoot(){
   var n = $('lf-ratio');
   n.innerHTML = pct(r.freeRatio) + '<small>%</small>';
   n.classList.toggle('low', r.freeRatio < 0.4);
-  $('lf-sum').innerHTML = over
-    ? '<b>這樣的生活你的薪水撐不起：每天要多打工 ' + d.moon.toFixed(1) + ' 小時，或者刪掉幾項。</b><br>' +
-      '一個月花 ' + lifeTotalMonthly(L).toLocaleString('en-US') + ' 元，薪水只有 ' + Math.round(d.income / 12).toLocaleString('en-US') + ' 元'
-    : '一天：睡 ' + d.sleep + '　為帳單 ' + d.bill.toFixed(1) + '　通勤 ' + d.commute.toFixed(1) + '　家務 ' + d.chore.toFixed(1) + '<br>' +
-      '一個月花 <b>' + lifeTotalMonthly(L).toLocaleString('en-US') + '</b> 元　' +
-      (r.brokeYear ? '⚠️ 錢在 <b>' + r.brokeYear + ' 歲</b>用完' : '錢撐到最後，剩 ' + money(r.finalAssets));
+  var seg = daySeg(d.sleep, d.bill + d.moon, d.commute, d.chore);
+  $('lf-sum').innerHTML = dayBarHtml(seg, true) +
+    (over ? '<b style="color:#a8452c">薪水撐不起：每天要多打工 ' + d.moon.toFixed(1) + ' 小時，或者刪掉幾項</b>'
+          : '一個月花 <b>' + lifeTotalMonthly(L).toLocaleString('en-US') + '</b> 元　' +
+            (r.brokeYear ? '⚠️ 錢在 <b>' + r.brokeYear + ' 歲</b>用完' : '錢撐得到最後'));
 }
 
 /* =====================================================================
@@ -2220,14 +2329,14 @@ function scaleDef(p, kind, age){
       id:'commute', title:'第一座天平：通勤 vs 薪水',
       sub:'同一個你，兩種擺法。左邊錢多但每天都在路上，右邊錢少但走路就到。拉拉看，下面會算給你看差幾成。',
       left:{ name:'錢多一點，路遠一點',
-        ctls:[{ key:'bonus', label:'薪水加成', min:0, max:40, step:5, val:20, fmt:function(v){ return '+' + v + '%'; } },
-              { key:'mins',  label:'每天通勤', min:60, max:150, step:10, val:90, fmt:function(v){ return v + ' 分鐘'; } }],
+        ctls:[{ key:'bonus', label:'薪水加成', min:5, max:15, step:5, val:10, fmt:function(v){ return '+' + v + '%'; } },
+              { key:'mins',  label:'每天通勤', min:40, max:90, step:10, val:65, fmt:function(v){ return v + ' 分鐘'; } }],
         eff:function(v){ return { incomeMult: 1 + v.bonus/100, setCommute: Math.round(v.mins/60*250),
           label:'通勤 vs 薪水 → 薪水 +' + v.bonus + '%、每天通勤 ' + v.mins + ' 分鐘' }; },
         note:function(v){ return '一年在路上 ' + Math.round(v.mins/60*250) + ' 小時'; } },
       right:{ name:'錢少一點，走路上班',
-        ctls:[{ key:'cut',  label:'薪水折減', min:0, max:25, step:5, val:10, fmt:function(v){ return '−' + v + '%'; } },
-              { key:'mins', label:'每天通勤', min:0, max:45, step:5, val:15, fmt:function(v){ return v + ' 分鐘'; } }],
+        ctls:[{ key:'cut',  label:'薪水折減', min:0, max:10, step:5, val:5, fmt:function(v){ return '−' + v + '%'; } },
+              { key:'mins', label:'每天通勤', min:10, max:30, step:5, val:20, fmt:function(v){ return v + ' 分鐘'; } }],
         eff:function(v){ return { incomeMult: 1 - v.cut/100, setCommute: Math.round(v.mins/60*250),
           label:'通勤 vs 薪水 → 薪水 −' + v.cut + '%、每天通勤 ' + v.mins + ' 分鐘' }; },
         note:function(v){ return '一年在路上 ' + Math.round(v.mins/60*250) + ' 小時'; } }
@@ -2245,7 +2354,7 @@ function scaleDef(p, kind, age){
         eff:function(v){ return { setHousing: v.rent, label:'租 vs 買 → 繼續租，月租 ' + v.rent.toLocaleString('en-US') }; },
         note:function(v){ return '一年 ' + money(v.rent*12) + '，付完不會變成你的'; } },
       right:{ name:'買下去',
-        ctls:[{ key:'ping',    label:'坪數',     min:12, max:40, step:1,  val:25, fmt:function(v){ return v + ' 坪'; } },
+        ctls:[{ key:'ping',    label:'坪數',     min:15, max:40, step:1,  val:25, fmt:function(v){ return v + ' 坪'; } },
               { key:'downPct', label:'頭期成數', min:10, max:40, step:5,  val:20, fmt:function(v){ return v + '%'; } },
               { key:'years',   label:'貸款年數', min:20, max:40, step:5,  val:30, fmt:function(v){ return v + ' 年'; } }],
         eff:function(v){
@@ -2502,7 +2611,7 @@ function buildBoard(p){
     age: start, retireAge: p.retireAge,
     choices: {}, marks: {}, used: {}, log: [], nodeAt: {},
     decks: decks, rnd: rnd,
-    waiting: false, done: false, lastFreeRatio: null, jobName: p.isStudent ? '學生' : p.job.name
+    waiting: false, done: false, lastFreeRatio: null, jobName: p.isStudent ? '學生' : (p.job ? p.job.name : '上班族')
   };
 }
 
@@ -2510,7 +2619,7 @@ function paramsOf(p){
   var b = p.board;
   var e = cityExpense(p.city);
   var pen = DATA.pension;
-  var salary = p.isStudent
+  var salary = (p.isStudent || !p.job)
     ? { start:0, senior:0, volatility:0 }
     : { start:p.job.start, senior:p.job.senior, volatility:p.job.volatility };
   return {
@@ -2528,6 +2637,7 @@ function paramsOf(p){
     hasCat: false,
     gender: p.gender,
     salary: salary,
+    salaryMonthly: p.isStudent ? 0 : (p.salaryMonthly || 0),
     student: {
       active: p.isStudent,
       gradAge: gradAgeOf(p),
@@ -2622,6 +2732,7 @@ function refreshBoard(p, animate){
     : (y.retired && !y.broke) ? '退休了，不用再為帳單工作'
     : '今年每天為帳單工作 ' + billDay.toFixed(1) + ' 小時';
   $('hud-free-n').textContent = '一天剩 ' + dayFreeOf(y, p).toFixed(1) + ' 小時';
+  $('hud-daybar').innerHTML = dayBarHtml(daySegOfYear(y, p), true);
   var bar = $('hud-free-bar');
   var prev = b.lastFreeRatio;
   bar.style.width = (ratio * 100).toFixed(1) + '%';
@@ -2900,20 +3011,201 @@ function runAuto(){
   showEnd();
 }
 
+
+/* ---------- 24 小時分段條：五段一定加起來是 24 ---------- */
+function daySeg(sleep, bill, commute, chore){
+  sleep = Math.max(0, sleep); bill = Math.max(0, bill); commute = Math.max(0, commute); chore = Math.max(0, chore);
+  var used = sleep + bill + commute + chore;
+  if (used > 24){                                  // 塞不下就按比例壓，總和維持 24
+    var room = Math.max(0, 24 - sleep), busy = bill + commute + chore;
+    var k = busy > 0 ? room / busy : 0;
+    bill *= k; commute *= k; chore *= k;
+  }
+  var free = Math.max(0, 24 - sleep - bill - commute - chore);
+  return { sleep: sleep, bill: bill, commute: commute, chore: chore, free: free };
+}
+function daySegOfYear(y, p){
+  var commute = (y.commuteHours || 0) / 365;
+  return daySeg(p.sleepHours, (y.billHours || 0) / 365, commute, Math.max(0, (y.choreHours || 0) - (y.commuteHours || 0)) / 365);
+}
+function dayBarHtml(seg, small){
+  var items = [
+    { k:'sleep',   n:'睡',    v:seg.sleep },
+    { k:'bill',    n:'為帳單', v:seg.bill },
+    { k:'commute', n:'通勤',   v:seg.commute },
+    { k:'chore',   n:'家務',   v:seg.chore },
+    { k:'free',    n:'自己的', v:seg.free }
+  ];
+  return '<div class="daybar' + (small ? ' sm' : '') + '">' + items.map(function(x){
+    var w = x.v / 24 * 100;
+    var label = w >= 15 ? (x.n + ' ' + x.v.toFixed(1)) : (w >= 7 ? x.v.toFixed(1) : '');
+    return '<i class="' + x.k + '" style="width:' + w.toFixed(2) + '%">' + label + '</i>';
+  }).join('') + '</div>';
+}
+var DAY_LEGEND = '<div class="daylegend">' +
+  [['#9aa0c0','睡'],['#e8735a','為帳單工作'],['#e0a93c','通勤'],['#b6a0ee','家務'],['#3fae83','自己的']]
+  .map(function(x){ return '<span><i style="background:' + x[0] + '"></i>' + x[1] + '</span>'; }).join('') + '</div>';
+
+/* ---------- 需要的薪水線：這樣過日子，每年至少要賺多少 ---------- */
+var INFLATION = 0.02;      // 每年物價漲幅（模型假設）
+function neededSalaryOf(y, p){
+  var yrs = Math.max(0, y.age - p.startAge);
+  return y.spend * Math.pow(1 + INFLATION, yrs) / 12 / PLACEHOLDER_MODEL.netSalaryRatio;
+}
+function salaryCross(r, p){
+  for (var i = 0; i < r.years.length; i++){
+    var y = r.years[i];
+    if (y.retired || y.student) continue;
+    if (y.monthlySalary > 0 && neededSalaryOf(y, p) > y.monthlySalary){
+      return { age: y.age, need: neededSalaryOf(y, p), got: y.monthlySalary };
+    }
+  }
+  return null;
+}
+function drawSalaryChart(){
+  var cv = $('salchart'); if (!cv || !cv.getContext) return;
+  var p = G.players[0], run = activeRun(); if (!run) return;
+  var r = run.result;
+  var dpr = window.devicePixelRatio || 1, w = cv.clientWidth || 320, h = 150;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  var ctx = cv.getContext('2d'); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+  var work = r.years.filter(function(y){ return !y.retired; });
+  if (!work.length) return;
+  var maxV = 0;
+  work.forEach(function(y){ maxV = Math.max(maxV, y.monthlySalary, neededSalaryOf(y, p)); });
+  maxV = Math.max(maxV, 30000) * 1.1;
+  var padL = 34, padR = 8, padT = 10, padB = 20, iw = w - padL - padR, ih = h - padT - padB;
+  var a0 = work[0].age, a1 = work[work.length - 1].age;
+  function X(a){ return padL + (a - a0) / Math.max(1, a1 - a0) * iw; }
+  function Y(v){ return padT + ih - Math.min(v, maxV) / maxV * ih; }
+  ctx.font = '9px system-ui,sans-serif'; ctx.textBaseline = 'middle';
+  for (var k = 0; k <= 4; k++){
+    var v = maxV / 4 * k;
+    ctx.strokeStyle = '#eef1fb'; ctx.beginPath(); ctx.moveTo(padL, Y(v)); ctx.lineTo(w - padR, Y(v)); ctx.stroke();
+    ctx.fillStyle = '#8b91b4'; ctx.textAlign = 'right'; ctx.fillText(Math.round(v / 10000) + '萬', padL - 4, Y(v));
+  }
+  [['#7fa9f0', function(y){ return y.monthlySalary; }, 2.4],
+   ['#e8735a', function(y){ return neededSalaryOf(y, p); }, 2.0]].forEach(function(line, li){
+    ctx.strokeStyle = line[0]; ctx.lineWidth = line[2];
+    if (li === 1){ ctx.setLineDash([4, 3]); } else { ctx.setLineDash([]); }
+    ctx.beginPath();
+    work.forEach(function(y, i){ var x = X(y.age), yy = Y(line[1](y)); if (i === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy); });
+    ctx.stroke(); ctx.setLineDash([]);
+  });
+  var cross = salaryCross(r, p);
+  if (cross){
+    ctx.fillStyle = '#e8735a';
+    ctx.beginPath(); ctx.arc(X(cross.age), Y(cross.need), 4, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.fillStyle = '#8b91b4'; ctx.textAlign = 'left'; ctx.fillText(a0 + ' 歲', padL, h - 8);
+  ctx.textAlign = 'right'; ctx.fillText(a1 + ' 歲', w - padR, h - 8);
+  $('sal-legend').innerHTML = '<span style="color:#7fa9f0;font-weight:800">━ 你的月薪</span>　' +
+    '<span style="color:#e8735a;font-weight:800">┅ 這樣過日子需要的月薪</span>';
+  $('sal-cross').innerHTML = cross
+    ? '<b>' + cross.age + ' 歲</b>前月薪沒到 <b>' + (cross.need / 10000).toFixed(1) + ' 萬</b>，那年開始不夠用，要兼差或刪項目。'
+    : '你的薪水一路都追得上這樣的生活，不用兼差。';
+}
+
+/* ---------- 調整人生：三根槓桿，同一顆骰子、同一串事情 ---------- */
+function currentSettings(p){
+  return { investRate: p.investRate, scenario: p.scenario, insurance: p.insurance, salaryMonthly: p.salaryMonthly };
+}
+function renderTune(){
+  var p = G.players[0], base = activeRun(); if (!base) return;
+  var st = Object.assign({}, base.settings || currentSettings(p));
+  G.tune = st;
+  var el = $('tune-body');
+  el.innerHTML =
+    '<div class="tune"><h4>① 每個月存／投多少</h4>' +
+      '<div class="now" id="tn1-now"></div>' +
+      '<input id="tn-save" type="range" min="0" max="50" step="5">' +
+      '<div class="choices" id="tn-scn"></div>' +
+      '<div class="res" id="tn1-res">—</div></div>' +
+    '<div class="tune"><h4>② 要不要買保險</h4>' +
+      '<div class="now">現在：只有勞健保。加保商業醫療險，生病那年自付會少很多，但每年要繳保費。</div>' +
+      '<div class="choices" id="tn-ins"></div>' +
+      '<div class="res" id="tn2-res">—</div></div>' +
+    '<div class="tune"><h4>③ 薪水漲不漲</h4>' +
+      '<div class="now" id="tn3-now"></div>' +
+      '<div class="numrow"><input class="numin" id="tn-sal" type="number" inputmode="numeric" min="25000" max="200000" step="1000"><span class="unit">元／月</span></div>' +
+      '<input id="tn-salr" type="range" min="25000" max="200000" step="1000">' +
+      '<div class="res" id="tn3-res">—</div></div>' +
+    '<button class="bigcta" id="tn-apply">把這些改動加進我的人生</button>';
+
+  var sv = $('tn-save'); sv.value = Math.round(st.investRate * 100);
+  sv.oninput = function(){ st.investRate = parseInt(sv.value, 10) / 100; refreshTune(); };
+  chipRow($('tn-scn'), [{label:'保守 3%',v:0.03},{label:'中間 6%',v:0.06},{label:'樂觀 8%',v:0.08}],
+    function(i){ return st.scenario === i.v; }, function(i){ st.scenario = i.v; refreshTune(); });
+  chipRow($('tn-ins'), [{label:'不保',v:false},{label:'加保',v:true}],
+    function(i){ return st.insurance === i.v; }, function(i){ st.insurance = i.v; refreshTune(); });
+  var sl = $('tn-sal'), slr = $('tn-salr');
+  sl.value = st.salaryMonthly; slr.value = st.salaryMonthly;
+  function setSal(v){ v = Math.max(25000, Math.min(200000, Math.round(v || 25000))); st.salaryMonthly = v; sl.value = v; slr.value = v; refreshTune(); }
+  sl.oninput = function(){ setSal(parseFloat(sl.value)); };
+  slr.oninput = function(){ setSal(parseFloat(slr.value)); };
+  $('tn-apply').onclick = function(){
+    var run = addRun(p, base.choices, '調整後的人生', null, base.id, Object.assign({}, st));
+    run.log = base.log ? base.log.slice() : [];
+    p.investRate = st.investRate; p.scenario = st.scenario; p.insurance = st.insurance; p.salaryMonthly = st.salaryMonthly;
+    refreshEnd(run, base, null);
+  };
+  refreshTune();
+}
+function refreshTune(){
+  var p = G.players[0], base = activeRun(); if (!base) return;
+  var st = G.tune;
+  var b = base.result;
+  var r = simulateLife(paramsWith(p, base.choices, st));
+  var dDay = avgDailyFree(r, p) - avgDailyFree(b, p);
+  var dPct = (r.freeRatio - b.freeRatio) * 100;
+  function sign(x, d){ return (x >= 0 ? '＋' : '−') + Math.abs(x).toFixed(d); }
+  var stop = earliestStopAgeWith(p, base.choices, st);
+  $('tn1-now').textContent = '現在：' + (st.investRate ? '每月存 ' + pct(st.investRate) + '%，假設年化 ' + pct(st.scenario) + '%' : '一塊都沒存');
+  $('tn1-res').innerHTML = (stop ? '最早 <b>' + stop + ' 歲</b>就能停下來不工作。' : '照這樣撐不到最後。') +
+    '<br>一生 <b>' + sign(dPct, 1) + '</b> 個百分點，上班那幾十年每天 <b>' + sign(dDay, 1) + '</b> 小時。';
+  $('tn2-res').innerHTML = st.insurance
+    ? '有保險：' + (r.brokeYear ? '錢還是在 ' + r.brokeYear + ' 歲用完' : '錢撐得到最後') + '，一生 <b>' + sign(dPct, 1) + '</b> 個百分點。'
+    : '沒保險：生病那年帳單全額自己吃。';
+  $('tn3-now').textContent = '現在：月薪 ' + st.salaryMonthly.toLocaleString('en-US') + ' 元';
+  $('tn3-res').innerHTML = '一生 <b>' + pct(r.freeRatio) + '%</b>（' + sign(dPct, 1) + ' 個百分點），平均一天剩 <b>' +
+    avgDailyFree(r, p).toFixed(1) + '</b> 小時（' + sign(dDay, 1) + '）。' +
+    (r.brokeYear ? '<br>錢在 ' + r.brokeYear + ' 歲用完。' : '<br>錢撐得到最後。');
+}
+function earliestStopAgeWith(p, choices, st){
+  function ok(a){
+    var pr = paramsWith(p, choices, st);
+    pr.retireAge = a;
+    return simulateLife(pr).brokeYear === null;
+  }
+  var hi = p.retireAge;
+  if (!ok(hi)) return null;
+  var lo = p.startAge + 1, best = hi;
+  while (lo <= hi){ var mid = Math.floor((lo + hi) / 2); if (ok(mid)){ best = mid; hi = mid - 1; } else lo = mid + 1; }
+  return best;
+}
+
 /* =====================================================================
    平行人生：同一顆 seed、同一串骰子與事件，只換掉你點的那一年
    ===================================================================== */
 var RUN_COLORS = ['#a58bea', '#7fa9f0', '#3fae83', '#e0a93c', '#e8735a'];
 var runSeq = 0;
 
-function paramsWithChoices(p, choices){
+function paramsWith(p, choices, st){
   var pr = paramsOf(p);          // seed 一樣（G.seed + idx*31），骰子與格子都不重擲
   pr.events = choices;
+  if (st){
+    pr.investRate = st.investRate;
+    pr.investReturn = st.scenario;
+    pr.insurance = { has: st.insurance, tiers: PLACEHOLDER_INSURANCE.tiers };
+    if (st.salaryMonthly) pr.salaryMonthly = st.salaryMonthly;
+  }
   return pr;
 }
-function addRun(p, choices, label, changedAge, fromId){
-  var r = simulateLife(paramsWithChoices(p, choices));
-  var run = { id: 'run' + (++runSeq), label: label, choices: choices, result: r,
+function paramsWithChoices(p, choices){ return paramsWith(p, choices, null); }
+function addRun(p, choices, label, changedAge, fromId, settings){
+  var st = settings || currentSettings(p);
+  var r = simulateLife(paramsWith(p, choices, st));
+  var run = { id: 'run' + (++runSeq), label: label, choices: choices, result: r, settings: st,
               changedAge: changedAge || null, fromId: fromId || null };
   G.runs.push(run);
   while (G.runs.length > 5) G.runs.shift();     // 最多五條，超過丟最舊
@@ -2935,7 +3227,10 @@ function rebuildNode(p, age){
   var deck = (p.board.decks[n.deck] || []).filter(function(c){ return c.id === n.id; })[0];
   return deck ? { type:'card', card: Object.assign({}, deck, { kind: n.deck }) } : null;
 }
-function evalChoices(p, choices){ return simulateLife(paramsWithChoices(p, choices)); }
+function evalChoices(p, choices){
+  var a = activeRun();
+  return simulateLife(paramsWith(p, choices, a ? a.settings : currentSettings(p)));
+}
 
 /* ---------- 人生曲線（canvas；不手刻 SVG 座標）---------- */
 function drawChart(){
@@ -3110,7 +3405,9 @@ function refreshEnd(run, base, info){
   var p = G.players[0];
   p.result = run.result;
   renderPie(p);
+  renderTune();
   drawChart();
+  drawSalaryChart();
   renderRuns();
   renderLifePage(p);
   renderPrompt(p);
@@ -3175,7 +3472,8 @@ function showEnd(){
   $('foot-src').textContent = '';
   go('end');
   // canvas 要等版面排好才量得到寬度
-  setTimeout(function(){ drawChart(); bindChartClick(); }, 60);
+  renderTune();
+  setTimeout(function(){ drawChart(); drawSalaryChart(); bindChartClick(); }, 60);
 }
 function bindChartClick(){
   var cv = $('lifechart'); if (!cv || cv._bound) return;
@@ -3248,6 +3546,13 @@ function renderPie(p){
   $('e-retire').textContent = r.retireAge + ' 歲';
   $('e-broke').textContent = r.brokeYear ? r.brokeYear + ' 歲' : '夠用';
   var vd = $('verdict-slot'); if (vd) vd.innerHTML = verdictHtml(r, p);
+  var sumSeg = { sleep:0, bill:0, commute:0, chore:0, free:0 };
+  r.years.forEach(function(y){ var g = daySegOfYear(y, p);
+    sumSeg.sleep += g.sleep; sumSeg.bill += g.bill; sumSeg.commute += g.commute; sumSeg.chore += g.chore; sumSeg.free += g.free; });
+  var n = r.years.length;
+  var avgSeg = daySeg(sumSeg.sleep/n, sumSeg.bill/n, sumSeg.commute/n, sumSeg.chore/n);
+  var db = $('end-daybar');
+  if (db) db.innerHTML = '<p class="hint" style="margin-top:12px">平均一天長這樣：</p>' + dayBarHtml(avgSeg) + DAY_LEGEND;
 }
 
 function medal(i){ return ['🥇','🥈','🥉','🏅'][i] || '🏅'; }
@@ -3291,8 +3596,8 @@ function renderShareAll(){
       '<img class="portrait" src="' + esc(portraitFile(p)) + '" data-role="' + esc(portraitRole(p)) + '" alt="" onerror="this.hidden=true">' +
       '<div class="portrait-ph">' + playerEmoji(p) + '</div></div>' +
       '<div><div class="nm">' + esc(p.name) + '</div>' +
-      '<div class="sub">' + esc(p.board.jobName) + '｜' + esc(p.city) + '｜' + (p.insurance ? '有保險' : '沒保險') +
-      '｜' + (p.investRate ? '投 ' + pct(p.investRate) + '%' : '不投資') + '</div>' +
+      '<div class="sub">' + esc(p.board.jobName) + '｜' + esc(p.city) +
+      (p.insurance ? '｜有保險' : '') + (p.investRate ? '｜每月存 ' + pct(p.investRate) + '%' : '') + '</div>' +
       '<div class="sub">' + p.startAge + ' 歲走到 ' + r.years[r.years.length-1].age + ' 歲</div></div></div>' +
       '<div class="big">' + pct(r.freeRatio) + '<small>% 是自己的</small></div>' +
       '<div class="line">' + esc(quoteFor(r, p)) + '</div>' +
@@ -3511,7 +3816,7 @@ function bindUI(){
     go('title');
   };
   $('cr-next').onclick = function(){
-    if (G.step < 5){ G.step++; renderStep(); return; }
+    if (G.step < LAST_STEP){ G.step++; renderStep(); return; }
     showRoleCard();
   };
 
