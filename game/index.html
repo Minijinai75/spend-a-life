@@ -1616,6 +1616,7 @@ function newPlayer(i){
     city: '台北市',
     insurance: false,
     salaryMonthly: 40000,
+    livingAtHome: false,     // 住家裡：不用付房租
     investRate: 0,
     scenario: 0.06,
     retireAge: 65,
@@ -1893,7 +1894,20 @@ function drawStudentExtra(p){
 
 function stepCity(b, p){
   b.innerHTML = '<p class="hint">住在哪，決定你有多少時間要拿去換房租。</p>' +
+    '<div class="yn" id="home-list" style="margin-bottom:4px"></div>' +
     '<div class="cities" id="city-list"></div><p class="hint" id="city-hint" style="margin-top:12px"></p>';
+  function drawHome(){
+    var el = $('home-list'); el.innerHTML = '';
+    [{ v:false, b:'自己租', s:'每個月付房租，走這個城市一個人租一房的行情。' },
+     { v:true,  b:'住家裡', s:'房租 0。之後結婚搬出去才開始付房租。' }].forEach(function(it){
+      var x = document.createElement('button');
+      x.className = 'ynb'; x.type = 'button';
+      x.setAttribute('aria-pressed', String(p.livingAtHome === it.v));
+      x.innerHTML = '<b>' + it.b + '</b><span>' + it.s + '</span>';
+      x.onclick = function(){ p.livingAtHome = it.v; p.life = null; drawHome(); note(); };
+      el.appendChild(x);
+    });
+  }
   function draw(){
     var el = $('city-list'); el.innerHTML = '';
     CITIES.forEach(function(c){
@@ -1902,16 +1916,18 @@ function stepCity(b, p){
       x.className = 'city'; x.type = 'button';
       x.setAttribute('aria-pressed', String(p.city === c.key));
       x.innerHTML = '<div class="cn">' + c.key + '</div><div class="cm">一個人租 ' + rent.amount.toLocaleString('en-US') + ' 元／月</div>';
-      x.onclick = function(){ p.city = c.key; draw(); note(); };
+      x.onclick = function(){ p.city = c.key; p.life = null; draw(); note(); };
       el.appendChild(x);
     });
   }
   function note(){
     var rent = cityRent(p.city);
-    $('city-hint').innerHTML = '先照<b>一個人租一房</b>的行情算（' + p.city + ' 大約 ' +
-      rent.amount.toLocaleString('en-US') + ' 元／月）。之後結婚生小孩，才換成整層的房子。';
+    $('city-hint').innerHTML = p.livingAtHome
+      ? '住家裡：房租 <b>0</b>。' + p.city + '的物價跟房價還是照算——買房那一格會用這裡的行情。'
+      : '先照<b>一個人租一房</b>的行情算（' + p.city + ' 大約 ' + rent.amount.toLocaleString('en-US') +
+        ' 元／月）。之後結婚生小孩，才換成整層的房子。';
   }
-  draw(); note();
+  drawHome(); draw(); note();
 }
 
 function stepInsurance(b, p){
@@ -2012,7 +2028,7 @@ function showRoleCard(){
     : (p.job ? p.job.name : '月薪 ' + money(p.salaryMonthly));
   // 點任何一個都回到那一步重選
   $('rl-where').innerHTML = [
-    { t: p.city, step: 3 },
+    { t: p.city + (p.livingAtHome ? '・住家裡' : ''), step: 3 },
     { t: p.startAge + ' 歲', step: 1 },
     { t: '睡 ' + p.sleepHours + ' 小時', step: 1 },
     { t: p.isStudent ? '學生' : '月薪 ' + money(p.salaryMonthly), step: 2 }
@@ -2067,14 +2083,14 @@ function timeLabel(monthly, hourly){
 function defaultLife(p){
   var e = cityExpense(p.city).amount;
   return {
-    _forCity: p.city,
-    housing: cityRent(p.city).amount,
+    _forCity: p.city + (p.livingAtHome ? '|home' : ''),
+    housing: p.livingAtHome ? 0 : cityRent(p.city).amount,
     mealPrice: Math.max(50, Math.round(e * 0.2904 / 90 / 5) * 5),  // 主計處：食品 15.3% ＋ 餐廳旅館 13.74%
     transport: Math.round(e * 0.1151 / 100) * 100,                  // 運輸交通及資通訊 11.51%
     travelTrips: 1,
     travelCost: 40000,
     cats: 0,
-    parents: 0,
+    parents: p.livingAtHome ? 5000 : 0,   // 住家裡就給點家用
     other: Math.round(e * 0.3549 / 100) * 100,                      // 醫療、衣著、休閒教育、家具、金融
     savePct: p.investRate
   };
@@ -2086,9 +2102,13 @@ function lifeNonHousing(L){
 function lifeTotalMonthly(L){ return L.housing + lifeNonHousing(L); }
 
 var LIFE_ROWS = [
-  { key:'housing', name:'住（房租）', min:4000, max:60000, step:500,
+  { key:'housing', name:'住（房租）', min:0, max:60000, step:500,
     cost:function(L){ return L.housing; },
-    desc:function(L, p){ return '≈ 每月 ' + L.housing.toLocaleString('en-US') + ' 元　·　' + p.city + '一個人租的行情'; } },
+    desc:function(L, p){
+      if (L.housing === 0) return '住家裡，0 元　·　想付家用可以往右拉';
+      return '≈ 每月 ' + L.housing.toLocaleString('en-US') + ' 元　·　' +
+        (p.livingAtHome ? '你付給家裡的' : p.city + '一個人租的行情');
+    } },
   { key:'mealPrice', name:'三餐（一餐多少）', min:50, max:400, step:5,
     cost:function(L){ return L.mealPrice * 90; },
     desc:function(L){ return '≈ 每月 ' + (L.mealPrice*90).toLocaleString('en-US') + ' 元　·　一餐 ' + L.mealPrice + ' 元'; } },
@@ -2105,7 +2125,8 @@ var LIFE_ROWS = [
       '≈ 每月 ' + (L.cats * PLACEHOLDER_MODEL.catMonthly).toLocaleString('en-US') + ' 元　·　' + L.cats + ' 隻的罐頭、砂、看醫生'; } },
   { key:'parents', name:'給爸媽', min:0, max:30000, step:1000,
     cost:function(L){ return L.parents; },
-    desc:function(L){ return L.parents === 0 ? '目前沒有給' : '≈ 每月 ' + L.parents.toLocaleString('en-US') + ' 元'; } },
+    desc:function(L, p){ return L.parents === 0 ? '目前沒有給'
+      : '≈ 每月 ' + L.parents.toLocaleString('en-US') + ' 元' + (p && p.livingAtHome ? '　·　住家裡的家用' : ''); } },
   { key:'other', name:'其他（醫療、衣服、娛樂、學習）', min:0, max:30000, step:100,
     cost:function(L){ return L.other; },
     desc:function(L){ return '≈ 每月 ' + L.other.toLocaleString('en-US') + ' 元'; } },
@@ -2119,7 +2140,7 @@ var LIFE_ROWS = [
 
 function showLifeTable(){
   var p = P();
-  if (!p.life || p.life._forCity !== p.city) p.life = defaultLife(p);   // 換城市就整張表重算
+  if (!p.life || p.life._forCity !== (p.city + (p.livingAtHome ? '|home' : ''))) p.life = defaultLife(p);
   $('lf-who').textContent = G.playerCount > 1 ? ('玩家 ' + (G.creating + 1) + ' ／ ' + G.playerCount + '：我要的生活') : '我要的生活';
   renderLifeTable();
   go('life');
@@ -2953,7 +2974,7 @@ function drawDice(n, animate){
 /* ---------- 走 ---------- */
 function startBoardPhase(){
   G.players.forEach(function(p){
-    if (!p.life || p.life._forCity !== p.city) p.life = defaultLife(p);
+    if (!p.life || p.life._forCity !== (p.city + (p.livingAtHome ? '|home' : ''))) p.life = defaultLife(p);
     if (!p.board) p.board = buildBoard(p);
   });
   G.turn = 0;
