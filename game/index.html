@@ -981,6 +981,7 @@ var PLACEHOLDER_MODEL = {
   choresRetired: 365,               // 退休後沒通勤，家務照舊
   choresStudent: 1500,              // 上課＋作業＋通勤：學生沒在為帳單工作，但時間也不是全自由
   netSalaryRatio: 0.86,             // 勞健保自付＋所得稅後的實拿比例
+  bonusMonths: 0,                   // 年終獎金幾個月（玩家在薪水那步填，預設不給就是 0）
   seniorityYears: 25,               // 幾年爬到「資深薪」
   seniorGrowth: 1.35,               // 自己填月薪時，做久了大約爬到起薪的幾倍
   seniorityCurve: 0.7,              // 曲線指數，<1＝前期漲比較快
@@ -991,6 +992,8 @@ var PLACEHOLDER_MODEL = {
     parents: 1.10                   // 顧爸媽的日常加成；長照費用另用事件卡加
   },
   catMonthly: 2000,
+  commuteTimeValue: 0.5,            // 路上的時間值半薪（通勤那座天平把它折成錢）
+  commuteFarePerMin: 1.2,           // 每分鐘通勤的車錢概數
   moonlightRate: 0.8,               // 兼差時薪＝本職稅後時薪 × 0.8（PLACEHOLDER：沒有官方的兼差時薪統計）
   moonlightMaxHoursPerDay: 6,       // 一天最多兼 6 小時；再不夠才動存款／變負債
   freelancerVolatility: 0.35,       // 自由工作者收入上下震盪幅度
@@ -1219,8 +1222,9 @@ function simulateLife(p){
 
     // ---- 收入 ----
     var workIncome = 0, pensionIncome = 0, withdraw = 0;
+    var payMonths = 12 + (p.bonusMonths != null ? p.bonusMonths : M.bonusMonths);
     if (!retired && !isStudent){
-      workIncome = nominal * mult * 12 * M.netSalaryRatio;
+      workIncome = nominal * mult * payMonths * M.netSalaryRatio;
       // 勞退新制：雇主每月提繳 6%，滾入個人專戶
       pensionPot = pensionPot * (1 + M.laborPensionFundReturn) + nominal * mult * 12 * M.employerContribRate;
       insuredSum += Math.min(nominal * mult, PEN.maxInsuredSalary);
@@ -1681,6 +1685,7 @@ function newPlayer(i){
     insurance: false,
     salaryMonthly: 40000,
     livingAtHome: false,     // 住家裡：不用付房租
+    bonusMonths: 1.5,        // 年終獎金幾個月
     salarySteps: null,       // 薪水階梯：每 5 年一格
     investRate: 0,
     scenario: 0.06,
@@ -1789,6 +1794,10 @@ function stepSalary(b, p){
     '</div>' +
     '<input id="sal-range" type="range" min="' + SALARY_MIN + '" max="' + SALARY_MAX + '" step="' + SALARY_STEP + '">' +
     '<p class="hint" id="sal-note"></p>' +
+    '<div class="field"><label>年終獎金</label>' +
+    '<div class="slider-row"><input id="bonus-range" type="range" min="0" max="6" step="0.5">' +
+    '<div class="agebig" id="bonus-num" style="font-size:26px">1.5<span>個月</span></div></div>' +
+    '<p class="hint" id="bonus-note"></p></div>' +
     '<div class="field"><label>之後每 5 年大概領多少</label>' +
     '<p class="hint">先照一般的加薪速度幫你填好了，哪一格不對就直接點著改。</p>' +
     '<div class="steps-scroll" id="sal-steps"></div><p class="hint" id="sal-warn"></p></div>' +
@@ -1802,7 +1811,8 @@ function stepSalary(b, p){
     var take = Math.round(p.salaryMonthly * PLACEHOLDER_MODEL.netSalaryRatio);
     $('sal-note').innerHTML = p.isStudent
       ? '你選了學生，念書的這幾年沒有薪水，畢業那一格再決定要做什麼。'
-      : '稅、勞健保扣完大約實拿 <b>' + take.toLocaleString('en-US') + '</b> 元。';
+      : '稅、勞健保扣完大約實拿 <b>' + take.toLocaleString('en-US') + '</b> 元' +
+        (p.bonusMonths ? '；把年終攤進來，平均每月約 <b>' + (afterTaxMonthly(p) || 0).toLocaleString('en-US') + '</b> 元。' : '。');
   }
   function set(v){
     v = Math.max(SALARY_MIN, Math.min(SALARY_MAX, isNaN(v) ? SALARY_MIN : Math.round(v)));
@@ -1817,6 +1827,16 @@ function stepSalary(b, p){
     w.hidden = !w.hidden;
     $('sal-fold').textContent = w.hidden ? '不知道填多少？用職業中位數 ▾' : '收起來 ▴';
   };
+  var br = $('bonus-range'); br.value = p.bonusMonths;
+  function drawBonus(){
+    $('bonus-num').innerHTML = p.bonusMonths + '<span>個月</span>';
+    $('bonus-note').textContent = p.bonusMonths === 0
+      ? '沒有年終，一年就是領 12 個月。'
+      : '一年總共領 ' + (12 + p.bonusMonths) + ' 個月，攤到每個月大約多 ' +
+        Math.round(p.salaryMonthly * p.bonusMonths / 12).toLocaleString('en-US') + ' 元。';
+  }
+  br.oninput = function(){ p.bonusMonths = parseFloat(br.value); drawBonus(); draw(); };
+  drawBonus();
   drawJobs(p);
   draw();
   renderSalSteps(p);
@@ -2187,6 +2207,7 @@ function showRoleCard(){
       amortizeAnnual(p.loanAmount, PLACEHOLDER_STUDENT.loanRate, PLACEHOLDER_STUDENT.loanYears).toLocaleString('en-US') + ' 元，攤 ' + PLACEHOLDER_STUDENT.loanYears + ' 年。');
   } else {
     note.push('做久了月薪會爬到 ' + money(Math.round(p.salaryMonthly * PLACEHOLDER_MODEL.seniorGrowth)) + ' 左右。');
+    note.push('年終 ' + p.bonusMonths + ' 個月，稅後平均每月約 ' + (afterTaxMonthly(p) || 0).toLocaleString('en-US') + ' 元。');
   }
   note.push('這局會從 ' + p.startAge + ' 歲走到 ' + lifeEndAge(p.gender) + ' 歲。');
   $('rl-note').textContent = note.join('　');
@@ -2206,7 +2227,8 @@ function afterTaxMonthly(p){
   var gross = (p.salarySteps && p.salarySteps.length) ? p.salarySteps[0].monthly
     : (p.salaryMonthly || (p.job ? Math.round(p.job.start * (PLACEHOLDER_GENDER[p.gender] || 1)) : 0));
   if (!gross) return null;
-  return Math.round(gross * PLACEHOLDER_MODEL.netSalaryRatio);
+  var months = 12 + (p.bonusMonths != null ? p.bonusMonths : 0);
+  return Math.round(gross * months / 12 * PLACEHOLDER_MODEL.netSalaryRatio);
 }
 function hourlyOf(p){
   var hoursPerMonth = PLACEHOLDER_MODEL.workHoursPerYear / 12;   // 166.7
@@ -2232,8 +2254,7 @@ function defaultLife(p){
     housing: rentOf(p).amount,
     mealPrice: Math.max(50, Math.round(e * 0.2904 / 90 / 5) * 5),  // 主計處：食品 15.3% ＋ 餐廳旅館 13.74%
     transport: Math.round(e * 0.1151 / 100) * 100,                  // 運輸交通及資通訊 11.51%
-    travelTrips: 1,
-    travelCost: 40000,
+    travelYear: 40000,
     pet: 0,
     parents: p.livingAtHome ? 5000 : 0,   // 住家裡就給點家用
     other: Math.round(e * 0.3549 / 100) * 100,                      // 醫療、衣著、休閒教育、家具、金融
@@ -2241,7 +2262,7 @@ function defaultLife(p){
   };
 }
 function lifeNonHousing(L){
-  return L.mealPrice * 90 + L.transport + Math.round(L.travelTrips * L.travelCost / 12) +
+  return L.mealPrice * 90 + L.transport + Math.round((L.travelYear || 0) / 12) +
          (L.pet || 0) + L.parents + L.other;
 }
 function lifeTotalMonthly(L){ return L.housing + lifeNonHousing(L); }
@@ -2260,10 +2281,10 @@ var LIFE_ROWS = [
   { key:'transport', name:'交通', min:0, max:15000, step:100,
     cost:function(L){ return L.transport; },
     desc:function(L){ return '≈ 每月 ' + L.transport.toLocaleString('en-US') + ' 元　·　通勤、加油、手機網路'; } },
-  { key:'travelTrips', name:'旅行（一年幾次）', min:0, max:4, step:1,
-    cost:function(L){ return Math.round(L.travelTrips * L.travelCost / 12); },
-    desc:function(L){ return L.travelTrips === 0 ? '不出去玩' :
-      '≈ 每月 ' + Math.round(L.travelTrips*L.travelCost/12).toLocaleString('en-US') + ' 元　·　一年 ' + L.travelTrips + ' 趟'; } },
+  { key:'travelYear', name:'旅行（一年花多少）', min:0, max:300000, step:5000,
+    cost:function(L){ return Math.round((L.travelYear || 0) / 12); },
+    desc:function(L){ return (L.travelYear ? '一年 ' + L.travelYear.toLocaleString('en-US') + ' 元' : '不出去玩') +
+      '　·　一年出國一趟大約 4～6 萬'; } },
   { key:'pet', name:'寵物', min:0, max:10000, step:500,
     cost:function(L){ return L.pet || 0; },
     desc:function(L){ return (L.pet ? '' : '沒有養　·　') + '貓狗兔魚都算，填你會花的'; } },
@@ -2657,21 +2678,34 @@ function scaleDef(p, kind, age){
   var rate = N.rate;
 
   if (kind === 'commute'){
+    // 通勤要花的錢：路上的時間折成半薪 ＋ 車錢
+    function commuteCost(mins){
+      var net = afterTaxMonthly(p) || 0;
+      var hourly = net / (PLACEHOLDER_MODEL.workHoursPerYear / 12);
+      var hrs = Math.round(mins / 60 * 250);
+      var timeCost = Math.round(hrs * hourly * PLACEHOLDER_MODEL.commuteTimeValue);
+      var fare = Math.round(mins * PLACEHOLDER_MODEL.commuteFarePerMin * 250);
+      return { hrs: hrs, timeCost: timeCost, fare: fare, total: timeCost + fare };
+    }
     return {
       id:'commute', title:'第一座天平：通勤 vs 薪水',
       sub:'同一個你，兩種擺法。左邊錢多但每天都在路上，右邊錢少但走路就到。拉拉看，下面會算給你看差幾成。',
       left:{ name:'錢多一點，路遠一點',
         ctls:[{ key:'bonus', label:'薪水加成', min:5, max:15, step:5, val:10, fmt:function(v){ return '+' + v + '%'; } },
               { key:'mins',  label:'每天通勤', min:40, max:90, step:10, val:65, fmt:function(v){ return v + ' 分鐘'; } }],
-        eff:function(v){ return { incomeMult: 1 + v.bonus/100, setCommute: Math.round(v.mins/60*250),
-          label:'通勤 vs 薪水 → 薪水 +' + v.bonus + '%、每天通勤 ' + v.mins + ' 分鐘' }; },
-        note:function(v){ return '一年在路上 ' + Math.round(v.mins/60*250) + ' 小時'; } },
+        eff:function(v){ var c = commuteCost(v.mins);
+          return { incomeMult: 1 + v.bonus/100, setCommute: c.hrs, annual: c.total,
+            label:'通勤 vs 薪水 → 薪水 +' + v.bonus + '%、每天通勤 ' + v.mins + ' 分鐘' }; },
+        note:function(v){ var c = commuteCost(v.mins);
+          return '一年在路上 ' + c.hrs + ' 小時 ≈ 少賺 ' + money(c.total); } },
       right:{ name:'錢少一點，走路上班',
         ctls:[{ key:'cut',  label:'薪水折減', min:0, max:10, step:5, val:5, fmt:function(v){ return '−' + v + '%'; } },
               { key:'mins', label:'每天通勤', min:10, max:30, step:5, val:20, fmt:function(v){ return v + ' 分鐘'; } }],
-        eff:function(v){ return { incomeMult: 1 - v.cut/100, setCommute: Math.round(v.mins/60*250),
-          label:'通勤 vs 薪水 → 薪水 −' + v.cut + '%、每天通勤 ' + v.mins + ' 分鐘' }; },
-        note:function(v){ return '一年在路上 ' + Math.round(v.mins/60*250) + ' 小時'; } }
+        eff:function(v){ var c = commuteCost(v.mins);
+          return { incomeMult: 1 - v.cut/100, setCommute: c.hrs, annual: c.total,
+            label:'通勤 vs 薪水 → 薪水 −' + v.cut + '%、每天通勤 ' + v.mins + ' 分鐘' }; },
+        note:function(v){ var c = commuteCost(v.mins);
+          return '一年在路上 ' + c.hrs + ' 小時 ≈ 少賺 ' + money(c.total); } }
     };
   }
 
@@ -2890,6 +2924,18 @@ function pickScale(sideKey, auto){
   b.choices[S.age] = eff;
   b.marks[S.age] = def.title;
   b.log.push({ age:S.age, kind:'scale', title:def.title, choice:side.name, detail:side.note(bag) });
+  // 沒結婚就不會走到「生 vs 不生」那一格，把它拿掉
+  if (def.id === 'marry' && sideKey === 'right'){
+    var changed = false;
+    b.cells.forEach(function(c){
+      if (c.type === 'milestone' && c.milestone === 'kid' && c.age > S.age){
+        c.type = 'normal'; c.milestone = null;
+        if (b.nodeAt) delete b.nodeAt[c.age];
+        changed = true;
+      }
+    });
+    if (changed) renderBoardGrid(p);
+  }
   b.waiting = false; b._scale = null;
   $('event-slot').innerHTML = '';
   $('board-ctrl').style.display = '';
@@ -2972,6 +3018,7 @@ function paramsOf(p){
     salary: salary,
     salaryMonthly: p.isStudent ? 0 : (p.salaryMonthly || 0),
     salarySteps: p.isStudent ? null : (p.salarySteps || null),
+    bonusMonths: p.isStudent ? 0 : (p.bonusMonths || 0),
     student: {
       active: p.isStudent,
       gradAge: gradAgeOf(p),
