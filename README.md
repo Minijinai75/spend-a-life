@@ -71,7 +71,7 @@ python -m http.server 8000
 ## 作品展示
 
 - 作品展示網址（選填）：https://minijinai75.github.io/spend-a-life/game/
-- 評選影片：（YouTube 連結，2 分鐘內）
+- 評選影片：https://youtu.be/IL_31t0o8Mk（1:46）
 
 ## 限制與未來工作
 
