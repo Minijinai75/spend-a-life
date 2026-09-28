@@ -3,6 +3,8 @@
 > 不是算一生要花多少錢，是算**一生有多少時間是自己的**。
 > BUILDMODE GEN-AI HACKATHON 2026｜隊伍 T058 同簷｜賽道 02 AI for Everyday Life
 
+**[▶ 59 秒 Launch Demo 動畫](https://minijinai75.github.io/spend-a-life/launch-demo.html)**——開頁自動播，看完就知道這個工具在做什麼。（單一 HTML 零依賴，由 Claude Opus 5.5 以一句話 prompt 生成）
+
 ## 問題與目標
 
 每個人都在焦慮錢，但幾乎沒有人真的算過自己這輩子要花多少、要工作多久才夠。焦慮沒有形狀，所以只能一直焦慮。這個工具要讓人**看見**一件事：為了生活，現在的生活到底夠不夠？有沒有留時間給自己？
